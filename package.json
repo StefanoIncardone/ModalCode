@@ -12,11 +12,18 @@
   "activationEvents": [ "onStartupFinished" ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "helloworld.helloWorld",
-        "title": "Hello World"
+    "configuration": {
+      "title": "Available modes",
+      "properties": {
+        "vimcode.modes": {
+          "type": "array",
+          "default": [],
+          "description": "List of avaialble modes"
+        }
       }
+    },
+    "commands": [
+
     ]
   },
   "scripts": {
