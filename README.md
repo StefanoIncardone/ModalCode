@@ -9,7 +9,8 @@ Simple extension to define custom vim-like modes with mode-specific commands.
 
 ## Example creation of a mode
 
-``` json
+``` jsonc
+// in settings.json
 "vimcode.modes": [
     {
         "name": "normal",
@@ -33,7 +34,7 @@ Simple extension to define custom vim-like modes with mode-specific commands.
 
 ## Naming the mode
 
-``` json
+``` jsonc
 "name": "modename"
 ```
 
@@ -43,7 +44,7 @@ trailing whitespaces are trimmed.
 The mode name will be used to generate the Vs Code command to enter the mode itself: a PascalCase version of the
 name will be generated and used as the command name:
 
-``` json
+``` jsonc
 "name": "modename"  // => "vimcode.enterModename"
 "name": "mode name" // => "vimcode.enterModeName"
 ```
@@ -52,7 +53,7 @@ name will be generated and used as the command name:
 
 [see all available icons](https://code.visualstudio.com/api/references/icons-in-labels "Vs Code icons in labels").
 
-``` json
+``` jsonc
 "icon": "icon-label-name"
 ```
 
@@ -61,7 +62,7 @@ The displayed mode indicator text is built from the icon label name and the mode
 - the mode name will be converted to all upper cases and used as the main text
 - if no icon id is provided only the mode name will be shown
 
-``` json
+``` jsonc
 "name": "normal"
 /* missing "icon" property */
 // => "-- NORMAL --"
@@ -73,7 +74,7 @@ The displayed mode indicator text is built from the icon label name and the mode
 
 ## Starting mode
 
-``` json
+``` jsonc
 "startingMode": true    // default: false
 ```
 
@@ -84,7 +85,7 @@ Used to set the mode in which the editor will first be in:
 
 ## Associated Commands
 
-``` json
+``` jsonc
 "keybindings": []
 ```
 
@@ -95,7 +96,7 @@ Used to set the mode in which the editor will first be in:
 
 ### Keys
 
-``` json
+``` jsonc
 // only single printable characters are allowed
 "key":  ✅ "s"
         ✅ " "
@@ -106,7 +107,7 @@ Used to set the mode in which the editor will first be in:
 
 ### Commands
 
-``` json
+``` jsonc
 "command": "workbench.action.files.save"
 ```
 
