@@ -1,17 +1,31 @@
 # Change Log
 
-## Known Issues
-
-- no settings validation
+## Known issues
 
 ## \[Unreleased]
 
-- settings validation/error handling
+- moving keybindings definition to separate `.ts`/`.js` files to allow for greater flexibility and creations os profils
+- error reporting
 - type subscription checking
-- adding context settings for each mode, used in keybindings "when" clauses
 
 ### 0.0.1
 
 - ability to define custom modes (name, status bar item icon, execution of vscode commands)
-    - unrestricted input: modes that just type the pressed key
-    - restricted input: modes that execute commands
+    - `unrestricted input`: modes that just type the pressed key
+    - `restricted input`: modes that execute commands
+
+### 1.0.0
+
+- added validation for config objects (the extension will not initialize if any errors are discovered):
+    - property names
+    - property types and values
+    - unrecocgnized (extra or mispelled) properties
+- redifined setting of `starting mode`:
+    - property to set the mode in which the editor will be in
+    - if no mode is set as the starting mode then the first mode in order of definition is chosen
+    - if more than one mode is set as the starting mode then the last mode in order of definition is chosen
+- renamed `commands` property to `keybindings`
+- redefined setting of `unrestricted input` and `restricted input` modes
+    - now called `insert` and `normal` modes respectively
+    - if no `keybindings` property is present the mode is now considered as an `insert mode`
+    - if the `keybindings` property is present the mode is now considered as a `normal mode`

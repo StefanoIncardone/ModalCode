@@ -1,42 +1,136 @@
-// TODO create global state class
-
 import * as vscode from "vscode";
-import { Command } from "../commands/commands";
+import { z } from "zod";
+import { KeybindProperties, Keybind } from "../keybindings/keybindings";
 
 
-interface ModeConfig {
-    name: string,
-    icon?: string,
-    restrictedInsert?: boolean,
-    commands: Command[]
+const lowerCaseAndSpaces = /^[a-z ]*$/;
+const kebabCase = /^[a-z]+(?:-[a-z]+)*$/;
+
+const ModeProperties = z.object( {
+    name: z.string().trim().min( 1 ).max( 16 ).regex( lowerCaseAndSpaces ),
+    icon: z.string().trim().regex( kebabCase ).optional(),
+    startingMode: z.boolean().default( false ),
+    keybindings: KeybindProperties.array().optional(),
+} ).strict();
+
+type ModeProperties = z.infer<typeof ModeProperties>;
+
+const ModeConfig = ModeProperties.array().nonempty();
+
+type ModeConfig = z.infer<typeof ModeConfig>;
+
+
+export abstract class GlobalState {
+    public static currentMode: Mode;
+    public static modes: Mode[];
+    public static statusBarItem: vscode.StatusBarItem;
+
+
+    private constructor() {}
+
+    public static init( context: vscode.ExtensionContext ): void {
+        const settings = vscode.workspace.getConfiguration( "vimcode" );
+        const definedModes = settings.get( "modes" );
+        const modeProperties = ModeConfig.safeParse( definedModes );
+        // TODO check every mode object and report any errors instead of just returning
+        if( !modeProperties.success ) {
+            return;
+        }
+
+        let modes: Mode[] = [];
+        let seenModes: Set<string>= new Set();
+
+        let startingMode = 0;
+
+        for( const [id, properties] of modeProperties.data.entries() ) {
+            if( seenModes.has( properties.name ) ) {
+                return;
+            }
+            else {
+                seenModes.add( properties.name );
+            }
+
+            const mode = Mode.new( id, properties );
+            modes.push( mode );
+
+            const modeContextName = toPascalCase( properties.name );
+
+            context.subscriptions.push(
+                vscode.commands.registerTextEditorCommand( `vimcode.enter${modeContextName}`,
+                    () => GlobalState.enterMode( id )
+                )
+            );
+
+            if( properties.startingMode ) {
+                startingMode = id;
+            }
+        }
+
+        this.modes = modes;
+
+        this.statusBarItem = vscode.window.createStatusBarItem( vscode.StatusBarAlignment.Left );
+        this.statusBarItem.show();
+
+        context.subscriptions.push(
+            this.statusBarItem,
+            vscode.commands.registerCommand( 'type', keypress => GlobalState.handleKey( keypress.text ) ),
+        );
+
+        this.enterMode( startingMode );
+
+        vscode.commands.executeCommand( "setContext", "vimcode.active", true );
+    }
+
+
+    public static handleKey( key: string ): void {
+        this.currentMode.execute( key );
+    }
+
+    public static enterMode( mode: number ): void {
+        this.currentMode = this.modes[ mode ];
+        this.statusBarItem.text = this.currentMode.text;
+
+        // TODO add setting of context keys for each mode
+    }
+}
+
+function toPascalCase( text: string ): string {
+  return text.replace( /(^\w| \w)/g, clearAndUpper );
+}
+
+function clearAndUpper( text: string ): string {
+  return text.replace( / /, "" ).toUpperCase();
 }
 
 
+// TODO move to composition model and mode factory
 abstract class Mode {
-    readonly id: number;
-    readonly name: string;
-    readonly text: string;
-    readonly commands: Command[];
+    public readonly id: number;
+    public readonly text: string;
 
-    constructor( id: number, name: string, commands: Command[], icon?: string ) {
+
+    protected constructor( id: number, name: string, icon?: string ) {
+        icon = icon === undefined ? "" : `$(${icon}) `;
+
         this.id = id;
-        this.name = name;
-
-        icon = icon === undefined ? " " : ` $(${icon}) `;
-        this.text = `--${icon}${name.toUpperCase()} --`;
-        this.commands = commands;
+        this.text = `-- ${icon}${name.toUpperCase()} --`;
     }
 
-    public enter(): void {
-        currentMode = this.id;
-        statusBarItem.text = this.text;
+    public static new( id: number, properties: ModeProperties ): Mode {
+        if( properties.keybindings === undefined ) {
+            return new InsertMode( id, properties.name, properties.icon );
+        }
+        else {
+            return new NormalMode( id, properties.name, properties.keybindings, properties.icon );
+        }
     }
 
-    abstract execute( key: string ): void;
+
+    public abstract execute( key: string ): void;
 }
 
-class UnrestrictedInsertMode extends Mode {
-    override execute( key: string ): void {
+class InsertMode extends Mode {
+    public override execute( key: string ): void {
         // TODO try to avoid checking for the active text editor each time
         let editor = vscode.window.activeTextEditor;
         if( !editor ) {
@@ -50,62 +144,28 @@ class UnrestrictedInsertMode extends Mode {
     }
 }
 
-class RestrictedInsertMode extends Mode {
-    override execute( key: string ): void {
-        // TODO transition to better searching method
-        for( const command of this.commands ) {
-            if( key === command.key ) {
-                vscode.window.showInformationMessage( `VimCode: found command for "${key}"` );
+class NormalMode extends Mode {
+    public readonly keybinds: Keybind[];
 
-                vscode.commands.executeCommand( command.command );
+
+    public constructor( id: number, name: string, keybinds: Keybind[], icon?: string ) {
+        super( id, name, icon );
+
+        this.keybinds = keybinds;
+    }
+
+
+    public override execute( key: string ): void {
+        // TODO transition to better searching method
+        for( const keybind of this.keybinds ) {
+            if( key === keybind.key ) {
+                vscode.window.showInformationMessage( `VimCode: found command for "${key}" -> "${keybind.command}"` );
+
+                vscode.commands.executeCommand( keybind.command );
+                return;
             }
         }
 
         vscode.window.showErrorMessage( `VimCode: command not found for "${key}"` );
     }
 }
-
-// TODO move to the extension.ts file or a separe initializer file
-function initializeModes(): [vscode.StatusBarItem, Mode[], number, vscode.Disposable[]] {
-    let settings = vscode.workspace.getConfiguration( "vimcode" );
-    let definedModes = settings.get<ModeConfig[]>( "modes" );
-
-    let modes: Mode[] = [];
-    let enterCommands: vscode.Disposable[] = [];
-
-    if( definedModes ) {
-        for( const [id, mode] of definedModes.entries() ) {
-            let currentMode: Mode;
-            let commands: Command[] = [];
-
-            for( const command of mode.commands ) {
-                commands.push( command );
-            }
-
-            if( "restrictedInsert" in mode && !mode.restrictedInsert ) {
-                currentMode = new UnrestrictedInsertMode( id, mode.name, commands, mode.icon );
-            }
-            else {
-                currentMode = new RestrictedInsertMode( id, mode.name, commands, mode.icon );
-            }
-
-            modes.push( currentMode );
-
-            // TODO move to the commands module
-            // TODO find better naming convention for modes
-            enterCommands.push( vscode.commands.registerTextEditorCommand( `vimcode.enter${currentMode.name}`, () => {
-                modes[ id ].enter()
-            } ) );
-        }
-    }
-
-    let currentMode = 0;
-
-    let statusBarItem = vscode.window.createStatusBarItem( vscode.StatusBarAlignment.Left );
-    statusBarItem.text = modes[ currentMode ].text;
-
-    return [statusBarItem, modes, currentMode, enterCommands];
-}
-
-
-export let [statusBarItem, modes, currentMode, enterCommands] = initializeModes();
