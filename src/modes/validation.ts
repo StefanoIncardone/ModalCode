@@ -3,13 +3,13 @@ import { z } from "zod";
 
 const lowerCaseAndSpaces = /^[a-z ]*$/;
 const kebabCase = /^[a-z]+(?:-[a-z]+)*$/;
-const singleLettersAndSpaces = /^[\D]$/;
+const notDigits = /^[\D]$/;
 
 const KeybindProperties = z.object( {
     // we only allow single keys as valid commands
     // TODO add possibility to define keys with Ctrl/alt/leader
     key: z.string()
-        .regex( singleLettersAndSpaces, "VimCode: only single characters and spaces allowed!" ),
+        .regex( notDigits, "VimCode: only single characters and spaces allowed!" ),
     command: z.string().trim().min( 1 ),
 } ).strict();
 
