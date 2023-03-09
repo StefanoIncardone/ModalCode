@@ -100,10 +100,13 @@ abstract class Mode {
     }
 
 
+    public abstract execute( key: string ): void;
     public abstract enter(): void;
 }
 
 class InsertMode extends Mode {
+    public override execute( _key: string ): void {}
+
     public override enter(): void {
         GlobalState.typeSubscription?.dispose();
         GlobalState.typeSubscription = undefined;
@@ -121,7 +124,7 @@ class NormalMode extends Mode {
     }
 
 
-    public execute( key: string ): void {
+    public override execute( key: string ): void {
         // TODO transition to better searching method -> set
         for( const keybind of this.keybinds ) {
             if( key === keybind.key ) {
@@ -136,7 +139,9 @@ class NormalMode extends Mode {
     public override enter(): void {
         if( GlobalState.typeSubscription === undefined ) {
             try {
-                GlobalState.typeSubscription = vscode.commands.registerCommand( "type", keypress => this.execute( keypress.text ) );
+                GlobalState.typeSubscription = vscode.commands.registerCommand( "type", keypress =>
+                    GlobalState.currentMode.execute( keypress.text )
+                );
             }
             catch {
                 vscode.window.showErrorMessage( 'VimCode: another extension is overwriting the "type" command!' );
