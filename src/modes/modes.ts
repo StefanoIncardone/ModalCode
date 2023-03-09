@@ -1,23 +1,6 @@
 import * as vscode from "vscode";
-import { z } from "zod";
-import { KeybindProperties, Keybind } from "../keybindings/keybindings";
-
-
-const lowerCaseAndSpaces = /^[a-z ]*$/;
-const kebabCase = /^[a-z]+(?:-[a-z]+)*$/;
-
-const ModeProperties = z.object( {
-    name: z.string().trim().min( 1 ).max( 16 ).regex( lowerCaseAndSpaces ),
-    icon: z.string().trim().regex( kebabCase ).optional(),
-    startingMode: z.boolean().default( false ),
-    keybindings: KeybindProperties.array().optional(),
-} ).strict();
-
-type ModeProperties = z.infer<typeof ModeProperties>;
-
-const ModeConfig = ModeProperties.array().nonempty();
-
-type ModeConfig = z.infer<typeof ModeConfig>;
+import { Keybind } from "../keybindings/keybindings";
+import { ModeConfig, ModeProperties } from "./validation";
 
 
 export abstract class GlobalState {
@@ -32,24 +15,20 @@ export abstract class GlobalState {
         const settings = vscode.workspace.getConfiguration( "vimcode" );
         const definedModes = settings.get( "modes" );
         const modeProperties = ModeConfig.safeParse( definedModes );
-        // TODO check every mode object and report any errors instead of just returning
         if( !modeProperties.success ) {
+            for( const issue of modeProperties.error.issues ) {
+                vscode.window.showErrorMessage( issue.message );
+            }
+
+            vscode.window.showErrorMessage( "VimCode: extension not activated" );
             return;
         }
 
         let modes: Mode[] = [];
-        let seenModes: Set<string>= new Set();
 
         let startingMode = 0;
 
         for( const [id, properties] of modeProperties.data.entries() ) {
-            if( seenModes.has( properties.name ) ) {
-                return;
-            }
-            else {
-                seenModes.add( properties.name );
-            }
-
             const mode = Mode.new( id, properties );
             modes.push( mode );
 
