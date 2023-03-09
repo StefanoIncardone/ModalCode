@@ -2,6 +2,10 @@
   "name": "vimcode",
   "displayName": "VimCode",
   "description": "Adding user-defined modes to VsCode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StefanoIncardone/VimCode"
+  },
   "version": "1.1.0",
   "engines": {
     "vscode": "^1.76.0"
