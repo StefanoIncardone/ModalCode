@@ -2,11 +2,12 @@
 
 ## Known issues
 
+- setting `vimcode.enter<modename>` command to `escape` causes problems such as not deselecting selections and not
+    removing multiple selections
+
 ## \[Unreleased]
 
-- moving keybindings definition to separate `.ts`/`.js` files to allow for greater flexibility and creations os profils
-- error reporting
-- type subscription checking
+- moving keybindings definition to separate `.ts`/`.js` files to allow for greater flexibility and creation os profiles
 
 ## 0.0.1
 
@@ -33,3 +34,8 @@
 ## 1.1.0
 
 - addedd basic error reporting for modes definitions
+
+
+## 1.1.1
+
+- fixed insert mode type subscription

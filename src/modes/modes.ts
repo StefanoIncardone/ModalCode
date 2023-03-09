@@ -7,6 +7,7 @@ export abstract class GlobalState {
     public static currentMode: Mode;
     public static modes: Mode[];
     public static statusBarItem: vscode.StatusBarItem;
+    public static typeSubscription: vscode.Disposable | undefined;
 
 
     private constructor() {}
@@ -50,25 +51,19 @@ export abstract class GlobalState {
         this.statusBarItem = vscode.window.createStatusBarItem( vscode.StatusBarAlignment.Left );
         this.statusBarItem.show();
 
-        context.subscriptions.push(
-            this.statusBarItem,
-            vscode.commands.registerCommand( 'type', keypress => GlobalState.handleKey( keypress.text ) ),
-        );
+        context.subscriptions.push( this.statusBarItem );
 
         this.enterMode( startingMode );
 
         vscode.commands.executeCommand( "setContext", "vimcode.active", true );
+        vscode.window.showInformationMessage( "VimCode: activated succesfully!" );
     }
 
-
-    public static handleKey( key: string ): void {
-        this.currentMode.execute( key );
-    }
 
     public static enterMode( mode: number ): void {
-        this.currentMode = this.modes[ mode ];
+        this.currentMode = this.modes[ mode ]
         this.statusBarItem.text = this.currentMode.text;
-
+        this.currentMode.enter();
         // TODO add setting of context keys for each mode
     }
 }
@@ -105,21 +100,13 @@ abstract class Mode {
     }
 
 
-    public abstract execute( key: string ): void;
+    public abstract enter(): void;
 }
 
 class InsertMode extends Mode {
-    public override execute( key: string ): void {
-        // TODO try to avoid checking for the active text editor each time
-        let editor = vscode.window.activeTextEditor;
-        if( !editor ) {
-            return;
-        }
-
-        vscode.window.showInformationMessage( `VimCode: typing "${key}"` );
-
-        let cursorPosition = editor.selection.active;
-        editor.edit( editorBuilder => editorBuilder.insert( cursorPosition, key ) );
+    public override enter(): void {
+        GlobalState.typeSubscription?.dispose();
+        GlobalState.typeSubscription = undefined;
     }
 }
 
@@ -134,17 +121,26 @@ class NormalMode extends Mode {
     }
 
 
-    public override execute( key: string ): void {
-        // TODO transition to better searching method
+    public execute( key: string ): void {
+        // TODO transition to better searching method -> set
         for( const keybind of this.keybinds ) {
             if( key === keybind.key ) {
-                vscode.window.showInformationMessage( `VimCode: found command for "${key}" -> "${keybind.command}"` );
-
                 vscode.commands.executeCommand( keybind.command );
                 return;
             }
         }
 
         vscode.window.showErrorMessage( `VimCode: command not found for "${key}"` );
+    }
+
+    public override enter(): void {
+        if( GlobalState.typeSubscription === undefined ) {
+            try {
+                GlobalState.typeSubscription = vscode.commands.registerCommand( "type", keypress => this.execute( keypress.text ) );
+            }
+            catch {
+                vscode.window.showErrorMessage( 'VimCode: another extension is overwriting the "type" command!' );
+            }
+        }
     }
 }

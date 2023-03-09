@@ -7,4 +7,6 @@ export function activate( context: vscode.ExtensionContext ) {
     GlobalState.init( context );
 }
 
-export function deactivate() {}
+export function deactivate() {
+    GlobalState.typeSubscription?.dispose();
+}
