@@ -25,35 +25,31 @@ export abstract class GlobalState {
             return;
         }
 
-        let modes: Mode[] = [];
+        this.modes = [];
 
-        let startingMode = 0;
-
-        for( const [id, properties] of modeProperties.data.entries() ) {
-            const mode = Mode.new( id, properties );
-            modes.push( mode );
-
-            const modeContextName = toPascalCase( properties.name );
-
-            context.subscriptions.push(
-                vscode.commands.registerTextEditorCommand( `vimcode.enter${modeContextName}`,
-                    () => GlobalState.enterMode( id )
-                )
-            );
+        for( const [currentMode, properties] of modeProperties.data.entries() ) {
+            const mode = Mode.new( properties );
 
             if( properties.startingMode ) {
-                startingMode = id;
+                this.modes.unshift( mode );
             }
-        }
+            else {
+                this.modes.push( mode );
+            }
 
-        this.modes = modes;
+            context.subscriptions.push(
+                vscode.commands.registerCommand( `vimcode.enter${toPascalCase( properties.name )}`, () => {
+                    GlobalState.enterMode( currentMode );
+                } )
+            );
+        }
 
         this.statusBarItem = vscode.window.createStatusBarItem( vscode.StatusBarAlignment.Left );
         this.statusBarItem.show();
 
         context.subscriptions.push( this.statusBarItem );
 
-        this.enterMode( startingMode );
+        this.enterMode( 0 );
 
         vscode.commands.executeCommand( "setContext", "vimcode.active", true );
         vscode.window.showInformationMessage( "VimCode: activated succesfully!" );
@@ -61,10 +57,9 @@ export abstract class GlobalState {
 
 
     public static enterMode( mode: number ): void {
-        this.currentMode = this.modes[ mode ]
+        this.currentMode = this.modes[ mode ];
         this.statusBarItem.text = this.currentMode.text;
         this.currentMode.enter();
-        // TODO add setting of context keys for each mode
     }
 }
 
@@ -79,26 +74,23 @@ function clearAndUpper( text: string ): string {
 
 // TODO move to composition model and mode factory
 abstract class Mode {
-    public readonly id: number;
     public readonly text: string;
 
 
-    protected constructor( id: number, name: string, icon?: string ) {
+    public constructor( name: string, icon?: string ) {
         icon = icon === undefined ? "" : `$(${icon}) `;
-
-        this.id = id;
         this.text = `-- ${icon}${name.toUpperCase()} --`;
     }
 
-    public static new( id: number, properties: ModeProperties ): Mode {
+
+    public static new( properties: ModeProperties ): Mode {
         if( properties.keybindings === undefined ) {
-            return new InsertMode( id, properties.name, properties.icon );
+            return new InsertMode( properties.name, properties.icon );
         }
         else {
-            return new NormalMode( id, properties.name, properties.keybindings, properties.icon );
+            return new NormalMode( properties.keybindings, properties.name, properties.icon );
         }
     }
-
 
     public abstract execute( key: string ): void;
     public abstract enter(): void;
@@ -117,9 +109,8 @@ class NormalMode extends Mode {
     public readonly keybinds: Keybind[];
 
 
-    public constructor( id: number, name: string, keybinds: Keybind[], icon?: string ) {
-        super( id, name, icon );
-
+    public constructor( keybinds: Keybind[], name: string, icon?: string ) {
+        super( name, icon );
         this.keybinds = keybinds;
     }
 
