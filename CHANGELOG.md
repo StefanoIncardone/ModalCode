@@ -4,6 +4,7 @@
 
 - setting `vimcode.enter<modename>` command to `escape` causes problems such as not deselecting selections and not
     removing multiple selections
+- due to current Vs Code limitations commands cannot check for "when" conditions (like keybindings)
 
 ## \[Unreleased]
 
