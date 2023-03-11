@@ -8,5 +8,6 @@ export function activate( context: vscode.ExtensionContext ) {
 }
 
 export function deactivate() {
+    vscode.commands.executeCommand( "setContext", "vimcode.active", false );
     GlobalState.typeSubscription?.dispose();
 }
