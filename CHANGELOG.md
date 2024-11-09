@@ -2,41 +2,40 @@
 
 ## Known issues
 
-- setting `vimcode.enter<modename>` command to `escape` causes problems such as not deselecting selections and not
-    removing multiple selections
-- due to current Vs Code limitations commands cannot check for "when" conditions (like keybindings)
+- Incorrect icon names specified in the `icon` mode setting will not display an icon,
+    hence a way of checking for erroneous icon names need to get implemented
 
-## \[Unreleased]
+## Unreleased
 
-- moving keybindings definition to separate `.ts`/`.js` files to allow for greater flexibility and creation os profiles
+- Add setting to choose what happens when the starting mode is not found:
+    - **fail**: stop activating the extension
+    - **use first**: quietly use the first mode in the list
+    - **warn and use first**: warn of starting mode not found and notify the use of the first mode in the list
+- Add setting to choose what happens when the modalcode.enter_mode mode is not found:
+    - **keep current**: keep the current mode selected
+    - **warn and keep current**: warn of mode not found and notify the use of the first mode in the list
+    - **use first**: quietly use the first mode in the list
+    - **warn and use first**: warn of mode not found and notify the use of the first mode in the list
+- Add modes colors customization
 
-## 0.0.1
+## 0.1.0
 
-- ability to define custom modes (name, status bar item icon, execution of vscode commands)
-    - `unrestricted input`: modes that just type the pressed key
-    - `restricted input`: modes that execute commands
+### Added
 
-## 1.0.0
-
-- added validation for config objects (the extension will not initialize if any errors are discovered):
-    - property names
-    - property types and values
-    - unrecocgnized (extra or mispelled) properties
-- redifined setting of `starting mode`:
-    - property to set the mode in which the editor will be in
-    - if no mode is set as the starting mode then the first mode in order of definition is chosen
-    - if more than one mode is set as the starting mode then the last mode in order of definition is chosen
-- renamed `commands` property to `keybindings`
-- redefined setting of `unrestricted input` and `restricted input` modes
-    - now called `insert` and `normal` modes respectively
-    - if no `keybindings` property is present the mode is now considered as an `insert mode`
-    - if the `keybindings` property is present the mode is now considered as a `normal mode`
-
-## 1.1.0
-
-- addedd basic error reporting for modes definitions
-
-
-## 1.1.1
-
-- fixed insert mode type subscription
+- Added ability to define custom modes in `modalcode.modes` setting:
+    - `name`: the name of the mode
+    - `icon`: status bar item icon, shown next to the name
+    - `capturing`: wether the mode captures typing inputs
+        - `true`: modes that just type the pressed key, just like default VsCode
+        - `false`: modes that execute commands
+- Added choosing starting mode with `modalcode.starting_mode` setting:
+    - Property to set the mode in which the editor will be in
+    - If no mode is set as the starting mode then the first mode in order of definition is chosen
+- Added validation for config objects:
+    - The extension will not activate if any errors are discovered:
+    - Property names
+    - Property types and values
+    - Unrecognized (extra or mispelled) properties
+- Added status bar item showing the current mode:
+    - Clicking on the status bar item lets you change mode
+- Added command `modalcode.change_mode` (`ModalCode: Change mode`) to change modes

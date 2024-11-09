@@ -1,122 +1,95 @@
 # Bringing together the best of Vim and Vs Code
 
-A simple input mode creation extension inspired by the [ModalEdit](https://github.com/johtela/vscode-modaledit) and
+A simple extension to define custom editor modes inspired by
+[ModalEdit](https://github.com/johtela/vscode-modaledit) and
 [ModalKeys](https://github.com/haberdashPI/vscode-modal-keys) extensions.
 
-## Features
+## Extension Settings
 
-Simple extension to define custom vim-like modes with mode-specific commands.
+- `Available modes` -> `modalcode.modes`: array of user-defined modes objects
+- `Starting mode` -> `modalcode.starting_mode`: the mode to select at startup
 
-## Example creation of a mode
+## Extension Commands
+
+- `Change mode` -> `modalcode.change_mode`: commnad to select a mode using a quick-pick panel
+- `Enter mode` -> `modalcode.enter_mode`: commnad to select a mode using a keybinding
+
+## Modes definitions
 
 ``` jsonc
 // in settings.json
-"vimcode.modes": [
+"modalcode.modes": [
     {
-        "name": "normal",
+        "name": "NORMAL",
         "icon": "move",
-        "startingMode": true,
-        "keybindings": [
-            {
-                "key": "i",
-                "command": "vimcode.enterInsert"
-            }
-        ]
+        "capturing": true,
     }
 ]
 ```
 
-**NOTE**: The extension will not get initialized (as it was not activated) if:
+The corresponding typescript type for mode properties is:
 
-- the entire `vimcode.modes` setting is missing the extension
-- no modes, or duplicate modes are defined
-- any spelling errors or unrecognized properties are discovered
-
-## Naming the mode
-
-``` jsonc
-"name": "modename"
+```ts
+type ModeProperties = {
+    readonly name: string; // minimum of 1 character, maximum of 16 characters
+    readonly icon?: string; // the icon associated with the mode
+    readonly capturing: boolean; // if the mode should capture typing events
+}
 ```
 
-The mode name can only contain 1 to 16 total lower case letters and spaces in between words as leading and
-trailing whitespaces are trimmed.
+See all available icons [Vs Code icons in labels](https://code.visualstudio.com/api/references/icons-in-labels).
 
-The mode name will be used to generate the Vs Code command to enter the mode itself: a PascalCase version of the
-name will be generated and used as the command name:
+## Status bar item
 
-``` jsonc
-"name": "modename"  // => "vimcode.enterModename"
-"name": "mode name" // => "vimcode.enterModeName"
+The extension creates a status bar item displaying the current mode.
+The displayed mode text is built from the icon label name and the mode name itself:
+
+```jsonc
+"name": "NORMAL",
+"icon": "symbol-boolean"
+// => "-- $(symbol-boolean) NORMAL --"
 ```
 
-### Status bar mode indicator text
-
-[see all available icons](https://code.visualstudio.com/api/references/icons-in-labels "Vs Code icons in labels").
+If no icon name is provided only the mode name will be shown:
 
 ``` jsonc
-"icon": "icon-label-name"
-```
-
-The displayed mode indicator text is built from the icon label name and the mode name itself:
-
-- the mode name will be converted to all upper cases and used as the main text
-- if no icon id is provided only the mode name will be shown
-
-``` jsonc
-"name": "normal"
+"name": "NORMAL"
 /* missing "icon" property */
 // => "-- NORMAL --"
+```
 
-"name": "select line",
-"icon": "symbol-boolean"
-// => "-- $(symbol-boolean) SELECT LINE --"
+If an incorrect icon name is provided no icon will be shown:
+
+```jsonc
+"name": "NORMAL",
+"icon": "incorrect"
+// => "-- NORMAL --"
 ```
 
 ## Starting mode
 
-``` jsonc
-"startingMode": true    // default: false
-```
-
 Used to set the mode in which the editor will first be in:
 
-- if no mode is specified to be the starting mode then the first mode in order of definition will be chosen
-- if more than one mode is set as the starting mode then the last mode in order of definition will be chosen
-
-## Associated Commands
-
 ``` jsonc
-"keybindings": []
+// in settings.json
+"modalcode.starting_mode": "NORMAL"
 ```
 
-- if no keybindings property is defined the mode is considered as an `insert mode`, where it is possible to just
-  insert characters as in a normal editor
-- if `zero` or `more` keybindings are defined the mode is considered as a `normal mode`, where every character is a
-  mode-specific command
+- if no starting mode is specified the first mode in order of definition will be chosen
+- the extension will fail to activate if the starting mode is not found
 
-### Keys
+## Definition of mode specific commands
 
-``` jsonc
-// only single printable characters are allowed
-"key":  ✅ "s"
-        ✅ " "
-        ✅ "\n"
-        ❌ "yy"
-        ❌ "ctrl+s",
-```
-
-### Commands
+The extensions exposes a contex key `modalcode.mode` when activated that stores the current mode,
+so defining a mode specif keybinding would look like this:
 
 ``` jsonc
-"command": "workbench.action.files.save"
+// in keybindings.json
+[
+{
+ "key": "j",
+ "command": "cursorDown",
+ "when": "modalcode.mode == 'NORMAL' && textInputFocus"
+}
+]
 ```
-
-The command can be any valid Vs Code built-in command, or defined by this extension such as commands for entering modes.
-
-## Requirements
-
-- `Zod`: schema validation module
-
-## Extension Settings
-
-- `Available modes`: list of user-defined modes

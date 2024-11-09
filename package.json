@@ -1,62 +1,72 @@
 {
-  "name": "vimcode",
-  "displayName": "VimCode",
-  "description": "Adding user-defined modes to VsCode",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/StefanoIncardone/VimCode"
-  },
-  "version": "1.1.1",
-  "engines": {
-    "vscode": "^1.76.0"
-  },
-  "categories": [
-    "Keymaps",
-    "Other"
+ "name": "modalcode",
+ "displayName": "ModalCode",
+ "description": "Adding user-defined modes to VsCode",
+ "repository": {
+  "type": "git",
+  "url": "https://github.com/StefanoIncardone/VimCode"
+ },
+ "version": "0.1.0",
+ "engines": {
+  "vscode": "^1.95.0"
+ },
+ "categories": [
+  "Keymaps",
+  "Other"
+ ],
+ "keywords": [
+  "modes"
+ ],
+ "activationEvents": [
+  "onStartupFinished"
+ ],
+ "main": "./out/extension.js",
+ "type": "module",
+ "contributes": {
+  "configuration": [
+   {
+    "title": "Available modes",
+    "properties": {
+     "modalcode.modes": {
+      "type": "array",
+      "description": "List of avaialble modes"
+     }
+    }
+   },
+   {
+    "title": "Starting mode",
+    "properties": {
+     "modalcode.starting_mode": {
+      "type": "string",
+      "description": "The starting mode"
+     }
+    }
+   }
   ],
-  "keywords": [
-    "vim",
-    "modes"
-  ],
-  "activationEvents": [ "onStartupFinished" ],
-  "main": "./out/extension.js",
-  "contributes": {
-    "configuration": {
-      "title": "Available modes",
-      "properties": {
-        "vimcode.modes": {
-          "type": "array",
-          "default": [],
-          "description": "List of avaialble modes"
-        }
-      }
-    },
-     "commands": [
-
-    ]
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
-  },
-  "dependencies": {
-    "zod": "3.20.6"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.76.0",
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "16.x",
-    "@typescript-eslint/eslint-plugin": "^5.53.0",
-    "@typescript-eslint/parser": "^5.53.0",
-    "eslint": "^8.34.0",
-    "glob": "^8.1.0",
-    "mocha": "^10.2.0",
-    "typescript": "^4.9.5",
-    "@vscode/test-electron": "^2.2.3"
-  }
+  "commands": [
+   {
+    "command": "modalcode.change_mode",
+    "title": "Change mode",
+    "category": "ModalCode"
+   }
+  ]
+ },
+ "scripts": {
+  "vscode:prepublish": "npm run compile",
+  "compile": "tsc -p ./",
+  "watch": "tsc -watch -p ./",
+  "lint": "eslint"
+ },
+ "devDependencies": {
+  "@eslint/js": "^9.14.0",
+  "@types/node": "^22.9.0",
+  "@types/vscode": "^1.95.0",
+  "@typescript-eslint/eslint-plugin": "^8.13.0",
+  "@typescript-eslint/parser": "^8.13.0",
+  "@vscode/test-electron": "^2.4.1",
+  "eslint": "^9.14.0",
+  "globals": "^15.12.0",
+  "typescript": "^5.6.3",
+  "typescript-eslint": "^8.13.0"
+ }
 }
