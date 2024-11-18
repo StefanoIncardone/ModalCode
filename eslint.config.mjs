@@ -31,6 +31,12 @@ export default [
                 format: ["snake_case"],
                 leadingUnderscore: "allow",
                 trailingUnderscore: "allow",
+            }, {
+                selector: ["variableLike"],
+                modifiers: "const",
+                format: ["UPPER_CASE"],
+                leadingUnderscore: "allow",
+                trailingUnderscore: "allow",
             }],
             "@typescript-eslint/no-unused-vars": ["warn", {
                 args: "all",

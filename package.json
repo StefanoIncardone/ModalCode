@@ -21,7 +21,6 @@
   "onStartupFinished"
  ],
  "main": "./out/extension.js",
- "type": "module",
  "contributes": {
   "configuration": [
    {
@@ -45,8 +44,8 @@
   ],
   "commands": [
    {
-    "command": "modalcode.change_mode",
-    "title": "Change mode",
+    "title": "Enter mode",
+    "command": "modalcode.enter_mode",
     "category": "ModalCode"
    }
   ]

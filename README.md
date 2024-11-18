@@ -1,4 +1,4 @@
-# Bringing together the best of Vim and Vs Code
+# Bringing together the best of Modal editors and VsCode
 
 A simple extension to define custom editor modes inspired by
 [ModalEdit](https://github.com/johtela/vscode-modaledit) and
@@ -11,8 +11,10 @@ A simple extension to define custom editor modes inspired by
 
 ## Extension Commands
 
-- `Change mode` -> `modalcode.change_mode`: commnad to select a mode using a quick-pick panel
-- `Enter mode` -> `modalcode.enter_mode`: commnad to select a mode using a keybinding
+- `Enter mode` -> `modalcode.enter_mode`: commnad to select a mode
+    - when an argument is provided the specified mode will be chosen
+    - when no argument is provided a quick-pick panel will be shown to select the mode,
+        this is also what happens when running the command from the command palette
 
 ## Modes definitions
 
@@ -27,22 +29,21 @@ A simple extension to define custom editor modes inspired by
 ]
 ```
 
-The corresponding typescript type for mode properties is:
+The corresponding typescript interface for mode properties is:
 
 ```ts
-type ModeProperties = {
+interface ModeProperties {
     readonly name: string; // minimum of 1 character, maximum of 16 characters
     readonly icon?: string; // the icon associated with the mode
     readonly capturing: boolean; // if the mode should capture typing events
 }
 ```
 
-See all available icons [Vs Code icons in labels](https://code.visualstudio.com/api/references/icons-in-labels).
-
 ## Status bar item
 
 The extension creates a status bar item displaying the current mode.
-The displayed mode text is built from the icon label name and the mode name itself:
+The displayed mode text is built from the
+[icon label](https://code.visualstudio.com/api/references/icons-in-labels) and the mode name:
 
 ```jsonc
 "name": "NORMAL",
@@ -54,7 +55,7 @@ If no icon name is provided only the mode name will be shown:
 
 ``` jsonc
 "name": "NORMAL"
-/* missing "icon" property */
+// missing "icon" property
 // => "-- NORMAL --"
 ```
 
@@ -75,8 +76,8 @@ Used to set the mode in which the editor will first be in:
 "modalcode.starting_mode": "NORMAL"
 ```
 
-- if no starting mode is specified the first mode in order of definition will be chosen
-- the extension will fail to activate if the starting mode is not found
+- If no starting mode is set or if the specified starting mode is not found, the first mode in
+    order of definition will be chosen
 
 ## Definition of mode specific commands
 
@@ -85,11 +86,9 @@ so defining a mode specif keybinding would look like this:
 
 ``` jsonc
 // in keybindings.json
-[
 {
  "key": "j",
  "command": "cursorDown",
  "when": "modalcode.mode == 'NORMAL' && textInputFocus"
 }
-]
 ```

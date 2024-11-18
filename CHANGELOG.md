@@ -2,21 +2,11 @@
 
 ## Known issues
 
-- Incorrect icon names specified in the `icon` mode setting will not display an icon,
-    hence a way of checking for erroneous icon names need to get implemented
+- Incorrect icon names specified in the `icon` mode setting will not display an icon
 
 ## Unreleased
 
-- Add setting to choose what happens when the starting mode is not found:
-    - **fail**: stop activating the extension
-    - **use first**: quietly use the first mode in the list
-    - **warn and use first**: warn of starting mode not found and notify the use of the first mode in the list
-- Add setting to choose what happens when the modalcode.enter_mode mode is not found:
-    - **keep current**: keep the current mode selected
-    - **warn and keep current**: warn of mode not found and notify the use of the first mode in the list
-    - **use first**: quietly use the first mode in the list
-    - **warn and use first**: warn of mode not found and notify the use of the first mode in the list
-- Add modes colors customization
+- Status bar item color customization
 
 ## 0.1.0
 
@@ -29,13 +19,8 @@
         - `true`: modes that just type the pressed key, just like default VsCode
         - `false`: modes that execute commands
 - Added choosing starting mode with `modalcode.starting_mode` setting:
-    - Property to set the mode in which the editor will be in
-    - If no mode is set as the starting mode then the first mode in order of definition is chosen
-- Added validation for config objects:
-    - The extension will not activate if any errors are discovered:
-    - Property names
-    - Property types and values
-    - Unrecognized (extra or mispelled) properties
+    - If no starting mode is set or if the specified starting mode is not found, the first mode in
+        order of definition will be chosen
+- Added `ModalCode: Enter mode` command (`modalcode.enter_mode`) to change modes
 - Added status bar item showing the current mode:
-    - Clicking on the status bar item lets you change mode
-- Added command `modalcode.change_mode` (`ModalCode: Change mode`) to change modes
+    - Clicking on the status bar item will execute the `ModalCode: Enter mode` command
