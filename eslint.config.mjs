@@ -23,30 +23,38 @@ export default [
             sourceType: "module",
         },
         rules: {
-            "@typescript-eslint/naming-convention": ["warn", {
-                selector: ["typeLike"],
-                format: ["PascalCase"]
-            }, {
-                selector: ["variableLike"],
-                format: ["snake_case"],
-                leadingUnderscore: "allow",
-                trailingUnderscore: "allow",
-            }, {
-                selector: ["variableLike"],
-                modifiers: "const",
-                format: ["UPPER_CASE"],
-                leadingUnderscore: "allow",
-                trailingUnderscore: "allow",
-            }],
-            "@typescript-eslint/no-unused-vars": ["warn", {
-                args: "all",
-                argsIgnorePattern: "^_",
-                caughtErrors: "all",
-                caughtErrorsIgnorePattern: "^_",
-                destructuredArrayIgnorePattern: "^_",
-                varsIgnorePattern: "^_",
-                ignoreRestSiblings: true
-            }],
+            "@typescript-eslint/naming-convention": [
+                "warn",
+                {
+                    selector: ["typeLike"],
+                    format: ["PascalCase"]
+                },
+                {
+                    selector: ["variableLike"],
+                    format: ["snake_case"],
+                    leadingUnderscore: "allow",
+                    trailingUnderscore: "allow",
+                },
+                {
+                    selector: ["variableLike"],
+                    modifiers: ["const"],
+                    format: ["UPPER_CASE", "snake_case"],
+                    leadingUnderscore: "allow",
+                    trailingUnderscore: "allow",
+                }
+            ],
+            "@typescript-eslint/no-unused-vars": [
+                "warn",
+                {
+                    args: "all",
+                    argsIgnorePattern: "^_",
+                    caughtErrors: "all",
+                    caughtErrorsIgnorePattern: "^_",
+                    destructuredArrayIgnorePattern: "^_",
+                    varsIgnorePattern: "^_",
+                    ignoreRestSiblings: true
+                }
+            ],
             "semi": "error",
             "curly": "error",
             "eqeqeq": "warn",
@@ -58,10 +66,13 @@ export default [
             "no-template-curly-in-string": "warn",
             "no-unmodified-loop-condition": "warn",
             "no-unreachable-loop": "warn",
-            "@typescript-eslint/no-use-before-define": ["warn", {
-                "functions": false,
-                "classes": false,
-            }],
+            "@typescript-eslint/no-use-before-define": [
+                "warn",
+                {
+                    "functions": false,
+                    "classes": false,
+                }
+            ],
             "no-useless-assignment": "warn",
             "block-scoped-var": "error",
             "class-methods-use-this": "warn",
@@ -69,7 +80,8 @@ export default [
             "default-case-last": "warn",
             "default-param-last": "error",
             "dot-notation": "error",
-            "func-style": ["error",
+            "func-style": [
+                "error",
                 "declaration"
             ],
             "no-case-declarations": "error",

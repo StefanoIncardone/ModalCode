@@ -18,7 +18,7 @@
   "modes"
  ],
  "activationEvents": [
-  "onStartupFinished"
+  "*"
  ],
  "main": "./out/extension.js",
  "contributes": {
