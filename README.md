@@ -6,15 +6,13 @@ A simple extension to define custom editor modes inspired by
 
 ## Extension Settings
 
-- `Available modes` -> `modalcode.modes`: array of user-defined modes objects
-- `Starting mode` -> `modalcode.starting_mode`: the mode to select at startup
+- `Available modes`, `modalcode.modes`: array of user-defined modes objects
+- `Starting mode`, `modalcode.starting_mode`: the mode to select at startup
 
 ## Extension Commands
 
-- `Enter mode` -> `modalcode.enter_mode`: commnad to select a mode
-    - when an argument is provided the specified mode will be chosen
-    - when no argument is provided a quick-pick panel will be shown to select the mode,
-        this is also what happens when running the command from the command palette
+- `Select mode`, `modalcode.select_mode`: select a mode through a quick-pick panel
+- `modalcode.enter_mode`: keyboard command to enter the mode specified as the argument
 
 ## Modes definitions
 
@@ -76,8 +74,11 @@ Used to set the mode in which the editor will first be in:
 "modalcode.starting_mode": "NORMAL"
 ```
 
-- If no starting mode is set or if the specified starting mode is not found, the first mode in
-    order of definition will be chosen
+The first mode in order of definition will be selected if:
+
+- no starting mode setting is present
+- an empty string is set
+- the specified starting mode is not found
 
 ## Definition of mode specific commands
 

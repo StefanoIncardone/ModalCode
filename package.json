@@ -44,8 +44,8 @@
   ],
   "commands": [
    {
-    "title": "Enter mode",
-    "command": "modalcode.enter_mode",
+    "title": "Select mode",
+    "command": "modalcode.select_mode",
     "category": "ModalCode"
    }
   ]

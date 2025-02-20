@@ -8,7 +8,15 @@
 
 - Status bar item color customization
 
-## 0.1.0
+## 0.1.1 -
+
+### Changed
+
+- Made `modalcode.enter_mode` just enters the mode specified as the first argument
+- `modalcode.enter_mode` with no/undefined argument is now `modalcode.select_mode`
+- An empty `modalcode.starting_mode` now selects the first mode in order of definition
+
+## 0.1.0 - 20/02/2025
 
 ### Added
 
