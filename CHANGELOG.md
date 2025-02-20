@@ -10,6 +10,10 @@
 
 ## 0.1.1 -
 
+### Added
+
+- Added schema validation for `modalcode.modes` setting
+
 ### Changed
 
 - Made `modalcode.enter_mode` just enters the mode specified as the first argument

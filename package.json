@@ -28,7 +28,28 @@
     "properties": {
      "modalcode.modes": {
       "type": "array",
-      "description": "List of avaialble modes"
+      "description": "List of avaialble modes",
+      "items": {
+       "type": "object",
+       "description": "Mode properties",
+       "required": ["name", "capturing"],
+       "additionalProperties": false,
+       "properties": {
+        "name": {
+         "type": "string",
+         "description": "The name of the mode"
+        },
+        "icon": {
+         "type": "string",
+         "description": "The icon label to show next to the mode name"
+        },
+        "capturing": {
+         "type": "boolean",
+         "description": "Whether the mode should capture typing events",
+         "default": false
+        }
+       }
+      }
      }
     }
    }
