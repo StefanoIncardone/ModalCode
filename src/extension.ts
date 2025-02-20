@@ -142,36 +142,6 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
     }
 
-    const starting_mode_setting = modalcode_settings.get("starting_mode");
-    if (starting_mode_setting === null) {
-        vscode.window.showErrorMessage("ModalCode: 'modalcode.starting_mode' property cannot be null");
-        return;
-    }
-    if (typeof starting_mode_setting !== "string") {
-        vscode.window.showErrorMessage(`ModalCode: invalid 'modalcode.starting_mode' setting type, expected 'string' but got '${typeof starting_mode_setting}'`);
-        return;
-    }
-
-    let starting_mode: string;
-    starting_mode_selection: if (starting_mode_setting.length > 0) {
-        if (starting_mode_setting.length > MAX_NAME_LENGTH) {
-            vscode.window.showErrorMessage(`ModalColde: 'modalcode.starting_mode' cannot be longer than ${MAX_NAME_LENGTH} characters`);
-            return;
-        }
-
-        for (const mode_properties of mode_properties_setting as ModeProperties[]) {
-            if (mode_properties.name === starting_mode_setting) {
-                starting_mode = mode_properties.name;
-                break starting_mode_selection;
-            }
-        }
-
-        starting_mode = (mode_properties_setting[0] as ModeProperties).name;
-        vscode.window.showInformationMessage(`ModalCode: starting mode '${starting_mode_setting}' not found, entering '${starting_mode}' instead`);
-    } else {
-        starting_mode = (mode_properties_setting[0] as ModeProperties).name;
-    }
-
     modes = Array<Mode>(mode_properties_setting.length);
     let capturing_modes_start_index = 0;
     non_capturing_modes_start_index = modes.length;
@@ -196,6 +166,8 @@ export function activate(context: vscode.ExtensionContext): void {
     status_bar_item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9999999999);
     status_bar_item.command = "modalcode.enter_mode";
     status_bar_item.tooltip = "Enter mode";
+
+    const starting_mode = modes_names[0] as string;
     enter_mode(starting_mode);
     status_bar_item.show();
 

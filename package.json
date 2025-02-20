@@ -31,15 +31,6 @@
       "description": "List of avaialble modes"
      }
     }
-   },
-   {
-    "title": "Starting mode",
-    "properties": {
-     "modalcode.starting_mode": {
-      "type": "string",
-      "description": "The starting mode"
-     }
-    }
    }
   ],
   "commands": [

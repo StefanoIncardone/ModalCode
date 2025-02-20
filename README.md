@@ -7,7 +7,6 @@ A simple extension to define custom editor modes inspired by
 ## Extension Settings
 
 - `Available modes`, `modalcode.modes`: array of user-defined modes objects
-- `Starting mode`, `modalcode.starting_mode`: the mode to select at startup
 
 ## Extension Commands
 
@@ -37,48 +36,38 @@ interface ModeProperties {
 }
 ```
 
+> [!NOTE]
+> The first mode in order of definition will be selected as the **starting** mode
+
 ## Status bar item
 
 The extension creates a status bar item displaying the current mode.
 The displayed mode text is built from the
 [icon label](https://code.visualstudio.com/api/references/icons-in-labels) and the mode name:
 
-```jsonc
-"name": "NORMAL",
-"icon": "symbol-boolean"
-// => "-- $(symbol-boolean) NORMAL --"
-```
+- If an icon name is provided it will be shown next to the mode name:
 
-If no icon name is provided only the mode name will be shown:
+    ```jsonc
+    "name": "NORMAL",
+    "icon": "symbol-boolean"
+    // -> "-- $(symbol-boolean) NORMAL --"
+    ```
 
-``` jsonc
-"name": "NORMAL"
-// missing "icon" property
-// => "-- NORMAL --"
-```
+- If no icon name is provided only the mode name will be shown:
 
-If an incorrect icon name is provided no icon will be shown:
+    ``` jsonc
+    "name": "NORMAL"
+    // missing "icon" property
+    // -> "-- NORMAL --"
+    ```
 
-```jsonc
-"name": "NORMAL",
-"icon": "incorrect"
-// => "-- NORMAL --"
-```
+- If an incorrect icon name is provided no icon will be shown:
 
-## Starting mode
-
-Used to set the mode in which the editor will first be in:
-
-``` jsonc
-// in settings.json
-"modalcode.starting_mode": "NORMAL"
-```
-
-The first mode in order of definition will be selected if:
-
-- no starting mode setting is present
-- an empty string is set
-- the specified starting mode is not found
+    ```jsonc
+    "name": "NORMAL",
+    "icon": "incorrect"
+    // -> "-- NORMAL --"
+    ```
 
 ## Definition of mode specific commands
 

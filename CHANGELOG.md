@@ -14,9 +14,12 @@
 
 - Made `modalcode.enter_mode` just enters the mode specified as the first argument
 - `modalcode.enter_mode` with no/undefined argument is now `modalcode.select_mode`
-- An empty `modalcode.starting_mode` now selects the first mode in order of definition
 
-## 0.1.0 - 20/02/2025
+### Removed
+
+- Removed `modalcode.starting_mode`, the starting mode is now always the first in order of definition
+
+## 0.1.0 - 18/11/2024
 
 ### Added
 
