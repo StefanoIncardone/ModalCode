@@ -1,5 +1,11 @@
 # Change Log
 
+All notable changes to this project will be documented in this file
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html),
+but may switch to [CalVer Versioning](https://calver.org/) in the future.
+
 ## Known issues
 
 - Incorrect icon names specified in the `icon` mode setting will not display an icon
@@ -23,7 +29,7 @@
 
 - Removed `modalcode.starting_mode`, the starting mode is now always the first in order of definition
 
-## 0.1.0 - 18/11/2024
+## 0.1.0 - 2024/11/10
 
 ### Added
 
