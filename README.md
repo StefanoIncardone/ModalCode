@@ -72,7 +72,7 @@ The displayed mode text is built from the
 ## Definition of mode specific commands
 
 The extensions exposes a contex key `modalcode.mode` when activated that stores the current mode,
-so defining a mode specif keybinding would look like this:
+so defining a mode specific keybinding would look like this:
 
 ``` jsonc
 // in keybindings.json

@@ -28,6 +28,7 @@
     "properties": {
      "modalcode.modes": {
       "type": "array",
+      "uniqueItems": true,
       "description": "List of avaialble modes",
       "items": {
        "type": "object",
@@ -37,11 +38,13 @@
        "properties": {
         "name": {
          "type": "string",
-         "description": "The name of the mode"
+         "description": "The name of the mode",
+         "minLength": 1,
+         "maxLength": 16
         },
         "icon": {
          "type": "string",
-         "description": "The icon label to show next to the mode name"
+         "markdownDescription": "The [icon label](https://code.visualstudio.com/api/references/icons-in-labels) to show next to the mode `name`"
         },
         "capturing": {
          "type": "boolean",
