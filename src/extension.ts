@@ -41,23 +41,23 @@ let type_subscription: vscode.Disposable | undefined;
 export function activate(context: vscode.ExtensionContext): void {
     const modalcode_settings = vscode.workspace.getConfiguration("modalcode");
 
-    const mode_properties_setting = modalcode_settings.get("modes");
-    if (mode_properties_setting === null) {
+    const modes_properties = modalcode_settings.get("modes");
+    if (modes_properties === null) {
         vscode.window.showInformationMessage("ModalCode: 'modalcode.modes' cannot be null");
         return;
     }
-    if (!Array.isArray(mode_properties_setting)) {
-        vscode.window.showErrorMessage(`ModalCode: invalid 'modalcode.modes' setting type, expected 'array' but got '${typeof mode_properties_setting}'`);
+    if (!Array.isArray(modes_properties)) {
+        vscode.window.showErrorMessage(`ModalCode: invalid 'modalcode.modes' setting type, expected 'array' but got '${typeof modes_properties}'`);
         return;
     }
-    if (mode_properties_setting.length === 0) {
+    if (modes_properties.length === 0) {
         vscode.window.showInformationMessage("ModalCode: no modes were defined");
         return;
     }
 
-    non_capturing_modes_start_index = mode_properties_setting.length;
-    for (let mode_properties_index = 0; mode_properties_index < mode_properties_setting.length; mode_properties_index += 1) {
-        const mode_properties = mode_properties_setting[mode_properties_index];
+    non_capturing_modes_start_index = modes_properties.length;
+    for (let mode_properties_index = 0; mode_properties_index < modes_properties.length; mode_properties_index += 1) {
+        const mode_properties = modes_properties[mode_properties_index];
         if (typeof mode_properties !== "object") {
             vscode.window.showErrorMessage(`ModalCode: invalid mode properties type, expected 'object' but got '${typeof mode_properties}'`);
             return;
@@ -125,7 +125,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         for (let mode_index = 0; mode_index < mode_properties_index; mode_index += 1) {
-            const defined_mode_name = (mode_properties_setting[mode_index] as ModeProperties).name;
+            const defined_mode_name = (modes_properties[mode_index] as ModeProperties).name;
             if (defined_mode_name === name) {
                 vscode.window.showErrorMessage(`ModalCode: found duplicate mode '${defined_mode_name}'`);
                 return;
@@ -137,18 +137,18 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     }
 
-    if (non_capturing_modes_start_index === mode_properties_setting.length) {
+    if (non_capturing_modes_start_index === modes_properties.length) {
         vscode.window.showErrorMessage("ModalCode: at least one non capturing mode needs to be defined");
         return;
     }
 
-    modes = Array<Mode>(mode_properties_setting.length);
+    modes = Array(modes_properties.length);
     let capturing_modes_start_index = 0;
     non_capturing_modes_start_index = modes.length;
 
-    modes_names = Array<string>(modes.length);
-    for (let mode_index = 0; mode_index < mode_properties_setting.length; mode_index += 1) {
-        const { name, icon, capturing } = mode_properties_setting[mode_index] as ModeProperties;
+    modes_names = Array(modes.length);
+    for (let mode_index = 0; mode_index < modes_properties.length; mode_index += 1) {
+        const { name, icon, capturing } = modes_properties[mode_index] as ModeProperties;
         const mode = new Mode(name, icon);
         if (capturing) {
             modes[capturing_modes_start_index] = mode;
@@ -164,8 +164,8 @@ export function activate(context: vscode.ExtensionContext): void {
     const enter_mode_command = vscode.commands.registerCommand("modalcode.enter_mode", enter_mode);
 
     status_bar_item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9999999999);
-    status_bar_item.command = "modalcode.enter_mode";
-    status_bar_item.tooltip = "Enter mode";
+    status_bar_item.command = "modalcode.select_mode";
+    status_bar_item.tooltip = "Select mode";
 
     const starting_mode = modes_names[0] as string;
     enter_mode(starting_mode);
