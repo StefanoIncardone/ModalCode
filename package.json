@@ -1,4 +1,9 @@
 {
+ "license": "MIT",
+ "author": {
+  "name": "Stefano Incardone",
+  "email": "stefanoincardone@gmail.com"
+ },
  "name": "modalcode",
  "displayName": "ModalCode",
  "description": "Adding user-defined modes to VsCode",

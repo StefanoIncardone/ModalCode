@@ -16,7 +16,7 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 - Status bar item color customization
 
-## 0.1.1 -
+## 0.1.1 - 2025/21/02
 
 ### Added
 

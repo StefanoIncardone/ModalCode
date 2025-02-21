@@ -185,7 +185,7 @@ export function deactivate(): void {
 async function select_mode(): Promise<void> {
     const mode_name = await vscode.window.showQuickPick(modes_names, {
         canPickMany: false,
-        title: "Enter mode",
+        title: "Select mode",
         placeHolder: "Select mode to enter",
     });
     if (mode_name === undefined) {
