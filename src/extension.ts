@@ -1,5 +1,6 @@
 // IDEA(stefano): implement multiple copy/paste buffers
 // IDEA(stefano): implement visual line mode commands
+// IDEA(stefano): add padding to mode names to avoid shifting the rest of the icons in the bar everytime the mode changes
 
 import * as vscode from "vscode";
 
@@ -11,7 +12,6 @@ declare global {
 
 interface ModeProperties {
     readonly name: string;
-    readonly icon?: string;
     readonly capturing: boolean;
 }
 
@@ -19,17 +19,12 @@ class Mode {
     public name: string;
     public text: string;
 
-    constructor(name: string, icon: string | undefined) {
+    constructor(name: string) {
+        // TODO(stefano): trim the name to remove whitespace
         this.name = name;
-        if (icon !== undefined && icon.length > 0) {
-            this.text = `-- $(${icon}) ${name} --`;
-        } else {
-            this.text = `-- ${name} --`;
-        }
+        this.text = `-- ${name} --`;
     }
 }
-
-const MAX_NAME_LENGTH = 16;
 
 let modes_names: string[];
 let modes: Mode[];
@@ -55,6 +50,9 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
     }
 
+    const MAX_NAME_LENGTH = 16;
+
+    // TODO: start at 0 and count upwards
     non_capturing_modes_start_index = modes_properties.length;
     for (let mode_properties_index = 0; mode_properties_index < modes_properties.length; mode_properties_index += 1) {
         const mode_properties = modes_properties[mode_properties_index];
@@ -87,7 +85,6 @@ export function activate(context: vscode.ExtensionContext): void {
             vscode.window.showErrorMessage(`ModalColde: 'name' mode property cannot be longer than ${MAX_NAME_LENGTH} characters`);
             return;
         }
-        // IDEA(stefano): add checks for leading/traling whitespace in `name`
 
         if (!("capturing" in mode_properties)) {
             vscode.window.showErrorMessage("ModalCode: missing 'capturing' mode property");
@@ -102,21 +99,8 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
-        if ("icon" in mode_properties) {
-            if (mode_properties.icon === null) {
-                vscode.window.showErrorMessage("ModalCode: 'icon' mode property cannot be null");
-                return;
-            }
-            if (typeof mode_properties.icon !== "string") {
-                vscode.window.showErrorMessage(`ModalCode: invalid 'icon' mode property, expected 'string' but got '${typeof mode_properties.icon}'`);
-                return;
-            }
-
-            // IDEA(stefano): add checks for invalid icon names, or remove icons entirely
-        }
-
         type ModePropertiesExtra = ModeProperties & { [key: string]: unknown };
-        const { name, icon, capturing, ...unexpected_properties } = mode_properties as ModePropertiesExtra;
+        const { name, capturing, ...unexpected_properties } = mode_properties as ModePropertiesExtra;
         if (Object.keys(unexpected_properties).length > 0) {
             for (const unexpected_property in unexpected_properties) {
                 vscode.window.showErrorMessage(`ModalCode: unexpected '${unexpected_property}' mode property for mode '${name}'`);
@@ -148,8 +132,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
     modes_names = Array(modes.length);
     for (let mode_index = 0; mode_index < modes_properties.length; mode_index += 1) {
-        const { name, icon, capturing } = modes_properties[mode_index] as ModeProperties;
-        const mode = new Mode(name, icon);
+        const { name, capturing } = modes_properties[mode_index] as ModeProperties;
+        const mode = new Mode(name);
         if (capturing) {
             modes[capturing_modes_start_index] = mode;
             capturing_modes_start_index += 1;
