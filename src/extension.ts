@@ -52,8 +52,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const MAX_NAME_LENGTH = 16;
 
-    // TODO: start at 0 and count upwards
-    non_capturing_modes_start_index = modes_properties.length;
+    non_capturing_modes_start_index = 0;
     for (let mode_properties_index = 0; mode_properties_index < modes_properties.length; mode_properties_index += 1) {
         const mode_properties = modes_properties[mode_properties_index];
         if (typeof mode_properties !== "object") {
@@ -117,11 +116,11 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         if (!capturing) {
-            non_capturing_modes_start_index -= 1;
+            non_capturing_modes_start_index += 1;
         }
     }
 
-    if (non_capturing_modes_start_index === modes_properties.length) {
+    if (non_capturing_modes_start_index === 0) {
         vscode.window.showErrorMessage("ModalCode: at least one non capturing mode needs to be defined");
         return;
     }
