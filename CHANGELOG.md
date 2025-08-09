@@ -15,6 +15,10 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 ## Unreleased
 
 - Status bar item color customization
+- Status bar item text padding to avoid shifting icons to the right
+- Removal of icon in name to avoid inconsistencies and unexpected behaviour
+
+## 0.1.2 -
 
 ## 0.1.1 - 2025/21/02
 
