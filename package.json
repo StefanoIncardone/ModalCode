@@ -47,10 +47,6 @@
          "minLength": 1,
          "maxLength": 16
         },
-        "icon": {
-         "type": "string",
-         "markdownDescription": "The [icon label](https://code.visualstudio.com/api/references/icons-in-labels) to show next to the mode `name`"
-        },
         "capturing": {
          "type": "boolean",
          "description": "Whether the mode should capture typing events",
