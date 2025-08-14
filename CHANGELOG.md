@@ -19,6 +19,11 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 ## 0.1.2 -
 
+### Fixed
+
+- Improved `modalcode.enter_mode` command type safety
+- Corrected handling of `type` command already subscripted
+
 ### Removed
 
 - Removed icon in bar item text to avoid inconsistencies and unexpected behaviours
