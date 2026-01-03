@@ -8,19 +8,16 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 ## Known issues
 
-- Incorrect icon names specified in the `icon` mode setting will not display an icon, would want to
-    report an error/warning instead
-- Duplicate mode names does not raise a warning in vscode
-
-## Unreleased
-
 - Status bar item color customization
 - Status bar item text padding to avoid shifting icons to the right
+
+## Unreleased
 
 ## 0.1.2 -
 
 ### Fixed
 
+- Duplicate mode names now raise a warning in VSCode
 - Improved `modalcode.enter_mode` command type safety
 - Corrected handling of `type` command already subscripted
 
