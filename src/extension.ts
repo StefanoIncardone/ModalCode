@@ -2,6 +2,8 @@
 // IDEA(stefano): implement visual line mode commands
 // IDEA(stefano): implement cursor alignment, to remove the "Cursor Align" extension
 // IDEA(stefano): implement toggling of quote kinds, to remove the "Toggle Quotes"
+// IDEA(stefano): implement command to generate a keybindings reset file
+// IDEA(stefano): provide a "reference" keybindings extension
 
 import * as vscode from "vscode";
 
@@ -39,6 +41,7 @@ export function activate(context: vscode.ExtensionContext): void {
         readonly name: string;
         readonly capturing: boolean;
     }
+
     interface ModeConfigExtra extends ModeConfig {
         readonly [key: string]: unknown
     };
@@ -46,6 +49,10 @@ export function activate(context: vscode.ExtensionContext): void {
     const modalcode_settings = vscode.workspace.getConfiguration("modalcode");
 
     const modes_config = modalcode_settings.get("modes");
+    if (modes_config === undefined) {
+        vscode.window.showInformationMessage("ModalCode: 'modalcode.modes' must be defined");
+        return;
+    }
     if (modes_config === null) {
         vscode.window.showInformationMessage("ModalCode: 'modalcode.modes' cannot be null");
         return;
@@ -84,11 +91,11 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
         if (typeof mode_config.name !== "string") {
-            vscode.window.showErrorMessage(`ModalCode: invalid 'name' mode property, expected 'string' but got '${typeof mode_config.name}'`);
+            vscode.window.showErrorMessage(`ModalCode: 'name' mode property must be a 'string' but got '${typeof mode_config.name}'`);
             return;
         }
         if (mode_config.name.length < MIN_NAME_LENGTH) {
-            vscode.window.showErrorMessage(`ModalCode: 'name' mode property must be at least ${MIN_NAME_LENGTH} characters`);
+            vscode.window.showErrorMessage(`ModalCode: 'name' mode property cannot be shorter than ${MIN_NAME_LENGTH} characters`);
             return;
         }
         if (mode_config.name.length > MAX_NAME_LENGTH) {
@@ -135,11 +142,11 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
     }
 
-    modes = Array(modes_config.length);
+    modes = Array(modes_config.length) as Mode[];
     let capturing_modes_start_index = 0;
     non_capturing_modes_start_index = modes.length;
 
-    modes_names = Array(modes.length);
+    modes_names = Array(modes.length) as string[];
     for (let mode_index = 0; mode_index < modes_config.length; mode_index += 1) {
         const { name, capturing } = modes_config[mode_index] as ModeConfig;
         const mode = new Mode(name);
@@ -188,7 +195,7 @@ async function select_mode(): Promise<void> {
     set_mode(mode_name);
 }
 
-function enter_mode(name: unknown | undefined): void {
+function enter_mode(name: unknown): void {
     if (name === undefined) {
         vscode.window.showErrorMessage("ModalCode: missing name argument");
         return;

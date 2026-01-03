@@ -6,35 +6,36 @@ A simple extension to define custom editor modes inspired by
 
 ## Extension Settings
 
-- `Available modes`, `modalcode.modes`: array of user-defined modes objects
+- `Available modes`, `modalcode.modes`: array of user-defined modes objects as follows:
+
+    ```jsonc
+    // in settings.json
+    "modalcode.modes": [
+        {
+            // minimum of 1 character, maximum of 16 characters
+            "name": "NORMAL", // creates a status bar item "-- NORMAL --"
+
+            // if the mode should capture typing events
+            "capturing": true
+        }
+    ]
+    ```
+
+> [!NOTE]
+> The first mode in order of definition will be selected as the **starting** mode
 
 ## Extension Commands
 
 - `Select mode`, `modalcode.select_mode`: select a mode through a quick-pick panel
 - `modalcode.enter_mode`: keyboard command to enter the mode specified as the argument
 
-## Modes definitions
-
-``` jsonc
-// in settings.json
-"modalcode.modes": [
+    ```jsonc
     {
-        "name": "NORMAL", // minimum of 1 character, maximum of 16 characters
-        "capturing": true, // if the mode should capture typing events
+        "key": "escape",
+        "command": "modalcode.enter_mode",
+        "args": "NORMAL"
     }
-]
-```
-
-> [!NOTE]
-> The first mode in order of definition will be selected as the **starting** mode
-
-## Status bar item
-
-The extension creates a status bar item displaying the current mode name:
-
-```jsonc
-"name": "NORMAL", // -> "-- NORMAL --"
-```
+    ```
 
 ## Definition of mode specific commands
 
@@ -44,8 +45,8 @@ so defining a mode specific keybinding would look like this:
 ``` jsonc
 // in keybindings.json
 {
- "key": "j",
- "command": "cursorDown",
- "when": "modalcode.mode == 'NORMAL' && textInputFocus"
+    "key": "j",
+    "command": "cursorDown",
+    "when": "modalcode.mode == 'NORMAL' && textInputFocus"
 }
 ```

@@ -8,7 +8,7 @@ export default [
         files: ["src/**/*.ts"],
     },
     {
-        ignores: ["out/**"],
+        ignores: ["out/**", "out_dev/**"],
     },
     {
         linterOptions: {
@@ -20,9 +20,18 @@ export default [
                 ...globals.node
             },
             parser: "@typescript-eslint/parser",
+            // parserOptions: {
+            //     projectService: true,
+            //     allowDefaultProject: ["*.js"],
+            // },
             sourceType: "module",
         },
         rules: {
+            // TODO(stefano): more fine grained configurations
+            // "@typescript-eslint/restrict-template-expressions": "off",
+            // "@typescript-eslint/consistent-indexed-object-style": "off",
+            // "@typescript-eslint/non-nullable-type-assertion-style": "off",
+
             "@typescript-eslint/naming-convention": [
                 "warn",
                 {
@@ -92,4 +101,6 @@ export default [
     },
     eslint.configs.recommended,
     ...tseslint.configs.recommended,
+    // ...tseslint.configs.strictTypeChecked,
+    // ...tseslint.configs.stylisticTypeChecked,
 ];
