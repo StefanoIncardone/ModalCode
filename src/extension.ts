@@ -14,6 +14,7 @@ declare global {
 }
 
 class Mode {
+    // IDEA(stefano): allow numbers
     public name: string;
     public text: string;
 
@@ -23,11 +24,10 @@ class Mode {
     }
 }
 
-const SELECT_MODE_COMMAND = "modalcode.select_mode";
-const SELECT_MODE_TOOLTIP = "Select mode";
-const SELECT_MODE_PLACEHOLDER = "Select mode to enter";
-const ENTER_MODE_COMMAND = "modalcode.enter_mode";
 const MODE_CONTEXT_KEY = "modalcode.mode";
+const SELECT_COMMAND = "modalcode.select";
+const SELECT_TOOLTIP = "Select mode";
+const SELECT_PLACEHOLDER = "Select mode to enter";
 
 let modes_names: string[];
 let modes: Mode[];
@@ -160,18 +160,17 @@ export function activate(context: vscode.ExtensionContext): void {
         modes_names[mode_index] = name;
     }
 
-    const select_mode_command = vscode.commands.registerCommand(SELECT_MODE_COMMAND, select_mode);
-    const enter_mode_command = vscode.commands.registerCommand(ENTER_MODE_COMMAND, enter_mode);
+    const select_mode_command = vscode.commands.registerCommand(SELECT_COMMAND, select_mode);
 
     status_bar_item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9999999999);
-    status_bar_item.command = SELECT_MODE_COMMAND;
-    status_bar_item.tooltip = SELECT_MODE_TOOLTIP;
+    status_bar_item.command = SELECT_COMMAND;
+    status_bar_item.tooltip = SELECT_TOOLTIP;
 
     const starting_mode = modes_names[0] as string;
     set_mode(starting_mode);
     status_bar_item.show();
 
-    context.subscriptions.push(select_mode_command, enter_mode_command, status_bar_item);
+    context.subscriptions.push(select_mode_command, status_bar_item);
 }
 
 export function deactivate(): void {
@@ -182,22 +181,18 @@ export function deactivate(): void {
     }
 }
 
-async function select_mode(): Promise<void> {
-    const mode_name = await vscode.window.showQuickPick(modes_names, {
-        canPickMany: false,
-        title: SELECT_MODE_TOOLTIP,
-        placeHolder: SELECT_MODE_PLACEHOLDER,
-    });
-    if (mode_name === undefined) {
-        return;
-    }
-
-    set_mode(mode_name);
-}
-
-function enter_mode(name: unknown): void {
+async function select_mode(name: unknown): Promise<void> {
     if (name === undefined) {
-        vscode.window.showErrorMessage("ModalCode: missing name argument");
+        const mode_name = await vscode.window.showQuickPick(modes_names, {
+            canPickMany: false,
+            title: SELECT_TOOLTIP,
+            placeHolder: SELECT_PLACEHOLDER,
+        });
+        if (mode_name === undefined) {
+            return;
+        }
+
+        set_mode(mode_name);
         return;
     }
     if (typeof name !== "string") {

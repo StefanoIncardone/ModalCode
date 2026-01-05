@@ -13,6 +13,12 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 ## Unreleased
 
+## 0.1.3 -
+
+### Changed
+
+- Merged `modalcode.enter_mode` with `modalcode.select_mode`, they are now `modalcode.select`
+
 ## 0.1.2 - 2026/01/05
 
 ### Fixed
