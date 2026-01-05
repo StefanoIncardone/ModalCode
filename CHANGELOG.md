@@ -13,7 +13,7 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 ## Unreleased
 
-## 0.1.2 -
+## 0.1.2 - 2026/01/05
 
 ### Fixed
 

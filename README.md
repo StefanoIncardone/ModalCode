@@ -11,6 +11,7 @@ A simple extension to define custom editor modes inspired by
     ```jsonc
     // in settings.json
     "modalcode.modes": [
+        // the first mode in order of definition will be selected as the starting mode
         {
             // minimum of 1 character, maximum of 16 characters
             "name": "NORMAL", // creates a status bar item "-- NORMAL --"
@@ -21,29 +22,23 @@ A simple extension to define custom editor modes inspired by
     ]
     ```
 
-> [!NOTE]
-> The first mode in order of definition will be selected as the **starting** mode
-
 ## Extension Commands
 
 - `Select mode`, `modalcode.select_mode`: select a mode through a quick-pick panel
 - `modalcode.enter_mode`: keyboard command to enter the mode specified as the argument
 
-    ```jsonc
-    {
-        "key": "escape",
-        "command": "modalcode.enter_mode",
-        "args": "NORMAL"
-    }
-    ```
-
 ## Definition of mode specific commands
 
-The extensions exposes a contex key `modalcode.mode` when activated that stores the current mode,
-so defining a mode specific keybinding would look like this:
+When activated, the extensions exposes the `modalcode.mode` contex key that stores the current mode
+`name` as defined in `modalcode.modes`, so defining a mode specific keybinding would look like this:
 
-``` jsonc
+```jsonc
 // in keybindings.json
+{
+    "key": "escape",
+    "command": "modalcode.enter_mode",
+    "args": "NORMAL"
+},
 {
     "key": "j",
     "command": "cursorDown",
