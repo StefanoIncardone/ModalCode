@@ -21,6 +21,10 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 - Allow definition of zero non-capturing modes
 - Not defining `modalcode.modes` or defining no modes no longer triggers information messages
 
+### Fixed
+
+- Information and error messages now better report their source location
+
 ## 0.1.2 - 2026/01/05
 
 ### Fixed
