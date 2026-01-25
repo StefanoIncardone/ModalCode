@@ -13,6 +13,11 @@ declare global {
     }
 }
 
+function is_object_empty(obj: object): boolean {
+    for (const _ in obj) return false;
+    return true;
+}
+
 class Mode {
     public name: string;
     public text: string;
@@ -45,12 +50,9 @@ export function activate(context: vscode.ExtensionContext): void {
         readonly [key: string]: unknown;
     }
 
-    // IDEA(stefano): treat undefined/null/.length === 0 as no modes defined
     const modes_config = vscode.workspace.getConfiguration("modalcode").get("modes");
-    if (modes_config === undefined) {
-        vscode.window.showInformationMessage("ModalCode: 'modalcode.modes' must be defined");
-        return;
-    }
+    if (modes_config === undefined) return;
+
     if (modes_config === null) {
         vscode.window.showInformationMessage("ModalCode: 'modalcode.modes' cannot be null");
         return;
@@ -59,10 +61,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.window.showErrorMessage(`ModalCode: invalid 'modalcode.modes' setting type, expected 'array' but got '${typeof modes_config}'`);
         return;
     }
-    if (modes_config.length === 0) {
-        vscode.window.showInformationMessage("ModalCode: no modes were defined");
-        return;
-    }
+    if (modes_config.length === 0) return;
 
     const MIN_NAME_LENGTH = 1;
     const MAX_NAME_LENGTH = 16;
@@ -115,8 +114,8 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         const { name, capturing, ...unexpected_properties } = mode_config as ModeConfigExtra;
-        // IDEA(stefano): remove call to Object.keys
-        if (Object.keys(unexpected_properties).length > 0) {
+
+        if (!is_object_empty(unexpected_properties)) {
             for (const unexpected_property in unexpected_properties) {
                 vscode.window.showErrorMessage(`ModalCode: unexpected '${unexpected_property}' mode property for mode '${name}'`);
             }
@@ -134,12 +133,6 @@ export function activate(context: vscode.ExtensionContext): void {
         if (!capturing) {
             ++non_capturing_modes_start_index;
         }
-    }
-
-    // NOTE(stefano): why not let the user define no non-capturing modes?
-    if (non_capturing_modes_start_index === 0) {
-        vscode.window.showErrorMessage("ModalCode: at least one non capturing mode needs to be defined");
-        return;
     }
 
     // IDEA(stefano): reuse `modes_config`

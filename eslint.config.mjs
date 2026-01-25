@@ -93,6 +93,7 @@ export default [
             "no-else-return": "warn",
             "no-empty-function": "warn",
             "no-eval": "error",
+            "no-unreachable-loop": "off",
         },
     },
     eslint.configs.recommended,

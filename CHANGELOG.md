@@ -18,6 +18,8 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 ### Changed
 
 - Merged `modalcode.enter_mode` with `modalcode.select_mode`, they are now `modalcode.select`
+- Allow definition of zero non-capturing modes
+- Not defining `modalcode.modes` or defining no modes no longer triggers information messages
 
 ## 0.1.2 - 2026/01/05
 
