@@ -14,7 +14,6 @@ declare global {
 }
 
 class Mode {
-    // IDEA(stefano): allow numbers
     public name: string;
     public text: string;
 
@@ -26,10 +25,10 @@ class Mode {
 
 const MODE_CONTEXT_KEY = "modalcode.mode";
 const SELECT_COMMAND = "modalcode.select";
-const SELECT_TOOLTIP = "Select mode";
-const SELECT_PLACEHOLDER = "Select mode to enter";
+const SELECT_COMMAND_TOOLTIP = "Select mode";
+const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
+let select_command_modes_names: string[];
 
-let modes_names: string[];
 let modes: Mode[];
 let non_capturing_modes_start_index: number;
 
@@ -43,12 +42,11 @@ export function activate(context: vscode.ExtensionContext): void {
     }
 
     interface ModeConfigExtra extends ModeConfig {
-        readonly [key: string]: unknown
-    };
+        readonly [key: string]: unknown;
+    }
 
-    const modalcode_settings = vscode.workspace.getConfiguration("modalcode");
-
-    const modes_config = modalcode_settings.get("modes");
+    // IDEA(stefano): treat undefined/null/.length === 0 as no modes defined
+    const modes_config = vscode.workspace.getConfiguration("modalcode").get("modes");
     if (modes_config === undefined) {
         vscode.window.showInformationMessage("ModalCode: 'modalcode.modes' must be defined");
         return;
@@ -70,7 +68,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const MAX_NAME_LENGTH = 16;
 
     non_capturing_modes_start_index = 0;
-    for (let config_index = 0; config_index < modes_config.length; config_index += 1) {
+    for (let config_index = 0; config_index < modes_config.length; ++config_index) {
         const mode_config = modes_config[config_index];
 
         if (typeof mode_config !== "object") {
@@ -117,6 +115,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         const { name, capturing, ...unexpected_properties } = mode_config as ModeConfigExtra;
+        // IDEA(stefano): remove call to Object.keys
         if (Object.keys(unexpected_properties).length > 0) {
             for (const unexpected_property in unexpected_properties) {
                 vscode.window.showErrorMessage(`ModalCode: unexpected '${unexpected_property}' mode property for mode '${name}'`);
@@ -124,7 +123,7 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
-        for (let mode_index = 0; mode_index < config_index; mode_index += 1) {
+        for (let mode_index = 0; mode_index < config_index; ++mode_index) {
             const defined_mode_name = (modes_config[mode_index] as ModeConfig).name;
             if (defined_mode_name === name) {
                 vscode.window.showErrorMessage(`ModalCode: found duplicate mode '${defined_mode_name}'`);
@@ -133,40 +132,41 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         if (!capturing) {
-            non_capturing_modes_start_index += 1;
+            ++non_capturing_modes_start_index;
         }
     }
 
+    // NOTE(stefano): why not let the user define no non-capturing modes?
     if (non_capturing_modes_start_index === 0) {
         vscode.window.showErrorMessage("ModalCode: at least one non capturing mode needs to be defined");
         return;
     }
 
+    // IDEA(stefano): reuse `modes_config`
     modes = Array(modes_config.length) as Mode[];
     let capturing_modes_start_index = 0;
     non_capturing_modes_start_index = modes.length;
 
-    modes_names = Array(modes.length) as string[];
-    for (let mode_index = 0; mode_index < modes_config.length; mode_index += 1) {
-        const { name, capturing } = modes_config[mode_index] as ModeConfig;
-        const mode = new Mode(name);
-        if (capturing) {
-            modes[capturing_modes_start_index] = mode;
-            capturing_modes_start_index += 1;
+    select_command_modes_names = Array(modes.length) as string[];
+    for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
+        const mode_config = modes_config[mode_index] as ModeConfig;
+        select_command_modes_names[mode_index] = mode_config.name;
+
+        const mode = new Mode(mode_config.name);
+        if (mode_config.capturing) {
+            modes[capturing_modes_start_index++] = mode;
         } else {
-            non_capturing_modes_start_index -= 1;
-            modes[non_capturing_modes_start_index] = mode;
+            modes[--non_capturing_modes_start_index] = mode;
         }
-        modes_names[mode_index] = name;
     }
 
     const select_mode_command = vscode.commands.registerCommand(SELECT_COMMAND, select_mode);
 
     status_bar_item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9999999999);
     status_bar_item.command = SELECT_COMMAND;
-    status_bar_item.tooltip = SELECT_TOOLTIP;
+    status_bar_item.tooltip = SELECT_COMMAND_TOOLTIP;
 
-    const starting_mode = modes_names[0] as string;
+    const starting_mode = select_command_modes_names[0]!;
     set_mode(starting_mode);
     status_bar_item.show();
 
@@ -183,14 +183,12 @@ export function deactivate(): void {
 
 async function select_mode(name: unknown): Promise<void> {
     if (name === undefined) {
-        const mode_name = await vscode.window.showQuickPick(modes_names, {
+        const mode_name = await vscode.window.showQuickPick(select_command_modes_names, {
             canPickMany: false,
-            title: SELECT_TOOLTIP,
-            placeHolder: SELECT_PLACEHOLDER,
+            title: SELECT_COMMAND_TOOLTIP,
+            placeHolder: SELECT_COMMAND_PLACEHOLDER,
         });
-        if (mode_name === undefined) {
-            return;
-        }
+        if (mode_name === undefined) return;
 
         set_mode(mode_name);
         return;
@@ -203,41 +201,37 @@ async function select_mode(name: unknown): Promise<void> {
     set_mode(name);
 }
 
+function disable_type_command(): void {
+    // disabling the 'type' command
+}
+
 function set_mode(name: string): void {
     let mode: Mode;
     search_mode: {
         let mode_index = 0;
-        for (; mode_index < non_capturing_modes_start_index; mode_index += 1) {
-            mode = modes[mode_index] as Mode;
-            if (mode.name !== name) {
-                continue;
-            }
+        for (; mode_index < non_capturing_modes_start_index; ++mode_index) {
+            mode = modes[mode_index]!;
+            if (mode.name !== name) continue;
 
             if (type_subscription === undefined) {
                 try {
-                    type_subscription = vscode.commands.registerCommand("type", () => {
-                        // disabling the 'type' command
-                    });
+                    type_subscription = vscode.commands.registerCommand("type", disable_type_command);
                 } catch {
                     vscode.window.showErrorMessage(`ModalCode: cannot enter '${mode.name}' because the 'type' command is already registered`);
                     return;
                 }
             }
-
             break search_mode;
         }
 
-        for (; mode_index < modes.length; mode_index += 1) {
-            mode = modes[mode_index] as Mode;
-            if (mode.name !== name) {
-                continue;
-            }
+        for (; mode_index < modes.length; ++mode_index) {
+            mode = modes[mode_index]!;
+            if (mode.name !== name) continue;
 
             if (type_subscription !== undefined) {
                 type_subscription.dispose();
                 type_subscription = undefined;
             }
-
             break search_mode;
         }
 

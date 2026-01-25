@@ -1,48 +1,36 @@
 {
- "license": "MIT",
+ "name": "modalcode",
+ "displayName": "ModalCode",
+ "version": "0.1.3-dev",
  "author": {
   "name": "Stefano Incardone",
   "email": "stefanoincardone@gmail.com"
  },
- "name": "modalcode",
- "displayName": "ModalCode",
  "description": "Adding user-defined modes to VsCode",
+ "license": "MIT",
  "repository": {
   "type": "git",
   "url": "https://github.com/StefanoIncardone/ModalCode"
  },
- "version": "0.1.3-dev",
- "engines": {
-  "node": "24.12.0",
-  "vscode": "^1.106.0"
- },
- "categories": [
-  "Keymaps",
-  "Other"
- ],
- "keywords": [
-  "modes"
- ],
- "activationEvents": [
-  "*"
- ],
- "main": "./out/extension.js",
+
+ "categories": ["Keymaps", "Other"],
+ "keywords": ["modes"],
+ "activationEvents": ["*"],
  "contributes": {
   "configuration": [
    {
-    "title": "Available modes",
+    "title": "Modes",
     "properties": {
      "modalcode.modes": {
       "type": "array",
+      "description": "List of modes to define",
+
       "uniqueItems": true,
-      "description": "List of avaialble modes",
       "items": {
        "type": "object",
        "description": "Mode properties",
-       "required": [
-        "name",
-        "capturing"
-       ],
+
+       "required": ["name", "capturing"],
        "additionalProperties": false,
        "properties": {
         "name": {
@@ -64,28 +52,34 @@
   ],
   "commands": [
    {
+    "category": "ModalCode",
     "title": "Select mode",
-    "command": "modalcode.select",
-    "category": "ModalCode"
+    "command": "modalcode.select"
    }
   ]
  },
+
+ "main": "./out/dev/extension.js",
  "scripts": {
-  "tsc": "tsc",
-  "compile": "tsc -p ./",
-  "watch": "tsc -watch -p ./",
-  "lint": "eslint"
+   "check": "tsc -p ./ --noEmit",
+   "compile": "tsc -p ./ --outDir ./out",
+   "compile-dev": "tsc -p ./ --outDir ./out/dev",
+   "lint": "eslint"
+ },
+ "engineStrict": true,
+ "engines": {
+   "node": "24.12.0",
+   "vscode": "^1.106.0"
  },
  "devDependencies": {
   "@types/vscode": "1.107.0",
+  "typescript": "5.9.3",
 
   "eslint": "9.39.2",
   "@eslint/js": "9.39.2",
   "typescript-eslint": "8.52.0",
   "@typescript-eslint/eslint-plugin": "8.52.0",
   "@typescript-eslint/parser": "8.52.0",
-
-  "globals": "17.0.0",
-  "typescript": "5.9.3"
+  "globals": "17.0.0"
  }
 }

@@ -8,7 +8,7 @@ export default [
         files: ["src/**/*.ts"],
     },
     {
-        ignores: ["out/**", "out_dev/**"],
+        ignores: ["out", "out_old", "*.mjs"],
     },
     {
         linterOptions: {
@@ -20,17 +20,16 @@ export default [
                 ...globals.node
             },
             parser: "@typescript-eslint/parser",
-            // parserOptions: {
-            //     projectService: true,
-            //     allowDefaultProject: ["*.js"],
-            // },
+            parserOptions: {
+                projectService: true,
+            },
             sourceType: "module",
         },
         rules: {
-            // TODO(stefano): more fine grained configurations
-            // "@typescript-eslint/restrict-template-expressions": "off",
-            // "@typescript-eslint/consistent-indexed-object-style": "off",
-            // "@typescript-eslint/non-nullable-type-assertion-style": "off",
+            "@typescript-eslint/restrict-template-expressions": "off",
+            "@typescript-eslint/consistent-indexed-object-style": "off",
+            "@typescript-eslint/non-nullable-type-assertion-style": "warn",
+            "@typescript-eslint/no-non-null-assertion": "off",
 
             "@typescript-eslint/naming-convention": [
                 "warn",
@@ -65,7 +64,7 @@ export default [
                 }
             ],
             "semi": "error",
-            "curly": "error",
+            // "curly": "error",
             "eqeqeq": "warn",
             "no-throw-literal": "warn",
             "no-implicit-coercion": "error",
@@ -78,8 +77,8 @@ export default [
             "@typescript-eslint/no-use-before-define": [
                 "warn",
                 {
-                    "functions": false,
-                    "classes": false,
+                    functions: false,
+                    classes: false,
                 }
             ],
             "no-useless-assignment": "warn",
@@ -89,10 +88,7 @@ export default [
             "default-case-last": "warn",
             "default-param-last": "error",
             "dot-notation": "error",
-            "func-style": [
-                "error",
-                "declaration"
-            ],
+            "func-style": [ "error", "declaration" ],
             "no-case-declarations": "error",
             "no-else-return": "warn",
             "no-empty-function": "warn",
@@ -100,7 +96,8 @@ export default [
         },
     },
     eslint.configs.recommended,
-    ...tseslint.configs.recommended,
+    ...tseslint.configs.recommendedTypeChecked,
+    // BUG(stefano): enabling these overrides the ones defined above
     // ...tseslint.configs.strictTypeChecked,
     // ...tseslint.configs.stylisticTypeChecked,
 ];
