@@ -5,17 +5,20 @@
 // IDEA(stefano): implement command to generate a keybindings reset file
 // IDEA(stefano): provide a "reference" keybindings extension
 
-import * as vscode from "vscode";
+import {
+    Disposable,
+    ExtensionContext,
+    StatusBarAlignment,
+    StatusBarItem,
+    window as vsc_window,
+    workspace as vsc_workspace,
+    commands as vsc_commands
+} from "vscode";
 
 declare global {
     interface ArrayConstructor {
         isArray(a: unknown): a is unknown[];
     }
-}
-
-function is_object_empty(obj: object): boolean {
-    for (const _ in obj) return false;
-    return true;
 }
 
 class Mode {
@@ -37,28 +40,29 @@ let select_command_modes_names: string[];
 let modes: Mode[];
 let non_capturing_modes_start_index: number;
 
-let status_bar_item: vscode.StatusBarItem;
-let type_subscription: vscode.Disposable | undefined;
+let status_bar_item: StatusBarItem;
+let type_subscription: Disposable | undefined;
 
-export function activate(context: vscode.ExtensionContext): void {
+export function activate(context: ExtensionContext): void {
+    interface ModeConfigUnknown {
+        readonly name?: unknown;
+        readonly capturing?: unknown;
+        readonly [key: string]: unknown;
+    }
+
     interface ModeConfig {
         readonly name: string;
         readonly capturing: boolean;
     }
 
-    interface ModeConfigExtra extends ModeConfig {
-        readonly [key: string]: unknown;
-    }
-
-    const modes_config = vscode.workspace.getConfiguration("modalcode").get("modes");
+    const modes_config = vsc_workspace.getConfiguration("modalcode").get("modes");
     if (modes_config === undefined) return;
-
     if (modes_config === null) {
-        vscode.window.showInformationMessage("ModalCode: 'modalcode.modes' cannot be null");
+        vsc_window.showInformationMessage("ModalCode: 'modalcode.modes' cannot be null");
         return;
     }
     if (!Array.isArray(modes_config)) {
-        vscode.window.showErrorMessage(`ModalCode: 'modalcode.modes' must be an 'array' but got '${typeof modes_config}'`);
+        vsc_window.showErrorMessage(`ModalCode: 'modalcode.modes' must be an 'array' but got '${typeof modes_config}'`);
         return;
     }
     if (modes_config.length === 0) return;
@@ -66,65 +70,65 @@ export function activate(context: vscode.ExtensionContext): void {
     const MIN_NAME_LENGTH = 1;
     const MAX_NAME_LENGTH = 16;
 
+    // IDEA(stefano): report errors for all modes and then terminate activation
     for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
         const mode_config = modes_config[mode_index];
 
         if (typeof mode_config !== "object") {
-            vscode.window.showErrorMessage(`ModalCode: mode at index ${mode_index} must be an 'object' but got '${typeof mode_config}'`);
+            vsc_window.showErrorMessage(`ModalCode: mode at index ${mode_index} must be an 'object' but got '${typeof mode_config}'`);
             return;
         }
         if (mode_config === null) {
-            vscode.window.showErrorMessage(`ModalCode: mode at index ${mode_index} cannot be null`);
+            vsc_window.showErrorMessage(`ModalCode: mode at index ${mode_index} cannot be null`);
             return;
         }
 
-        if (!("name" in mode_config)) {
-            vscode.window.showErrorMessage(`ModalCode: missing 'name' for mode at index ${mode_index}`);
+        const { name, capturing, ...unexpected_properties } = mode_config as ModeConfigUnknown;
+
+        if (name === undefined) {
+            vsc_window.showErrorMessage(`ModalCode: missing 'name' for mode at index ${mode_index}`);
             return;
         }
-        if (mode_config.name === null) {
-            vscode.window.showErrorMessage(`ModalCode: 'name' cannot be null for mode at index ${mode_index}`);
+        if (name === null) {
+            vsc_window.showErrorMessage(`ModalCode: 'name' cannot be null for mode at index ${mode_index}`);
             return;
         }
-        if (typeof mode_config.name !== "string") {
-            vscode.window.showErrorMessage(`ModalCode: 'name' must be a 'string' but got '${typeof mode_config.name}' for mode at index ${mode_index}`);
+        if (typeof name !== "string") {
+            vsc_window.showErrorMessage(`ModalCode: 'name' must be a 'string' but got '${typeof name}' for mode at index ${mode_index}`);
             return;
         }
-        if (mode_config.name.length < MIN_NAME_LENGTH) {
-            vscode.window.showErrorMessage(`ModalCode: 'name' cannot be shorter than ${MIN_NAME_LENGTH} characters for mode at index ${mode_index}`);
+        if (name.length < MIN_NAME_LENGTH) {
+            vsc_window.showErrorMessage(`ModalCode: 'name' cannot be shorter than ${MIN_NAME_LENGTH} characters for mode at index ${mode_index}`);
             return;
         }
-        if (mode_config.name.length > MAX_NAME_LENGTH) {
-            vscode.window.showErrorMessage(`ModalColde: 'name' cannot be longer than ${MAX_NAME_LENGTH} characters for mode at index ${mode_index}`);
+        if (name.length > MAX_NAME_LENGTH) {
+            vsc_window.showErrorMessage(`ModalColde: 'name' cannot be longer than ${MAX_NAME_LENGTH} characters for mode at index ${mode_index}`);
             return;
         }
 
-        if (!("capturing" in mode_config)) {
-            vscode.window.showErrorMessage(`ModalCode: missing 'capturing' mode property for mode at index ${mode_index}`);
+        if (capturing === undefined) {
+            vsc_window.showErrorMessage(`ModalCode: missing 'capturing' mode property for mode at index ${mode_index}`);
             return;
         }
-        if (mode_config.capturing === null) {
-            vscode.window.showErrorMessage(`ModalCode: 'capturing' mode property cannot be null for mode at index ${mode_index}`);
+        if (capturing === null) {
+            vsc_window.showErrorMessage(`ModalCode: 'capturing' mode property cannot be null for mode at index ${mode_index}`);
             return;
         }
-        if (typeof mode_config.capturing !== "boolean") {
-            vscode.window.showErrorMessage(`ModalCode: 'capturing' must be a 'boolean' but got '${typeof mode_config.name}' for mode at index ${mode_index}`);
-            return;
-        }
-
-        const { name, capturing, ...unexpected_properties } = mode_config as ModeConfigExtra;
-
-        if (!is_object_empty(unexpected_properties)) {
-            for (const unexpected_property in unexpected_properties) {
-                vscode.window.showErrorMessage(`ModalCode: unexpected '${unexpected_property}' for mode at index ${mode_index} '${name}'`);
-            }
+        if (typeof capturing !== "boolean") {
+            vsc_window.showErrorMessage(`ModalCode: 'capturing' must be a 'boolean' but got '${typeof capturing}' for mode at index ${mode_index}`);
             return;
         }
 
-        for (let previous_mode_index = 0; previous_mode_index < mode_index; ++previous_mode_index) {
-            const defined_mode = modes_config[previous_mode_index] as ModeConfig;
-            if (defined_mode.name === name) {
-                vscode.window.showErrorMessage(`ModalCode: found duplicate mode '${defined_mode.name}', already defined at index ${mode_index}`);
+        for (const _ in unexpected_properties) {
+            // TODO(stefano): better error message formatting
+            vsc_window.showErrorMessage(`ModalCode: unexpected '${Object.keys(unexpected_properties).toString()}' for mode '${name}' at index ${mode_index}`);
+            return;
+        }
+
+        for (let defined_mode_index = 0; defined_mode_index < mode_index; ++defined_mode_index) {
+            const mode = modes_config[defined_mode_index] as ModeConfig;
+            if (mode.name === name) {
+                vsc_window.showErrorMessage(`ModalCode: found duplicate mode '${mode.name}', already defined at index ${mode_index}`);
                 return;
             }
         }
@@ -135,11 +139,27 @@ export function activate(context: vscode.ExtensionContext): void {
 
     let capturing_modes_start_index = 0;
     non_capturing_modes_start_index = modes.length;
-    for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
-        const mode_config = modes_config[mode_index] as ModeConfig;
-        select_command_modes_names[mode_index] = mode_config.name;
 
+    const starting_mode_config = modes_config[0] as ModeConfig;
+    const starting_mode = new Mode(starting_mode_config.name);
+    select_command_modes_names[0] = starting_mode.name;
+    if (starting_mode_config.capturing) {
+        try {
+            type_subscription = vsc_commands.registerCommand("type", disable_type_command);
+        } catch {
+            vsc_window.showErrorMessage(`ModalCode: cannot enter '${starting_mode.name}' because the 'type' command is already registered`);
+            return;
+        }
+
+        modes[capturing_modes_start_index++] = starting_mode;
+    } else {
+        modes[--non_capturing_modes_start_index] = starting_mode;
+    }
+
+    for (let mode_index = 1; mode_index < modes_config.length; ++mode_index) {
+        const mode_config = modes_config[mode_index] as ModeConfig;
         const mode = new Mode(mode_config.name);
+        select_command_modes_names[mode_index] = mode.name;
         if (mode_config.capturing) {
             modes[capturing_modes_start_index++] = mode;
         } else {
@@ -147,85 +167,82 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     }
 
-    const select_mode_command = vscode.commands.registerCommand(SELECT_COMMAND, select_mode);
-
-    status_bar_item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9999999999);
+    status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, 9999999999);
     status_bar_item.command = SELECT_COMMAND;
     status_bar_item.tooltip = SELECT_COMMAND_TOOLTIP;
-
-    const starting_mode = select_command_modes_names[0]!;
-    set_mode(starting_mode);
+    status_bar_item.text = starting_mode.text;
     status_bar_item.show();
 
+    const select_mode_command = vsc_commands.registerCommand(SELECT_COMMAND, select_mode);
     context.subscriptions.push(select_mode_command, status_bar_item);
+
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, starting_mode.name);
 }
 
 export function deactivate(): void {
-    vscode.commands.executeCommand("setContext", MODE_CONTEXT_KEY, undefined);
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, undefined);
     if (type_subscription !== undefined) {
         type_subscription.dispose();
         type_subscription = undefined;
     }
 }
 
-async function select_mode(name: unknown): Promise<void> {
-    if (name === undefined) {
-        const mode_name = await vscode.window.showQuickPick(select_command_modes_names, {
-            canPickMany: false,
-            title: SELECT_COMMAND_TOOLTIP,
-            placeHolder: SELECT_COMMAND_PLACEHOLDER,
-        });
-        if (mode_name === undefined) return;
-
-        set_mode(mode_name);
-        return;
-    }
-    if (typeof name !== "string") {
-        vscode.window.showErrorMessage("ModalCode: name must be a string");
-        return;
-    }
-
-    set_mode(name);
-}
-
 function disable_type_command(): void {
     // disabling the 'type' command
 }
 
-function set_mode(name: string): void {
+async function select_mode(name: unknown): Promise<void> {
+    let target_mode_name: string | undefined;
+    if (name === undefined) {
+        target_mode_name = await vsc_window.showQuickPick(select_command_modes_names, {
+            canPickMany: false,
+            title: SELECT_COMMAND_TOOLTIP,
+            placeHolder: SELECT_COMMAND_PLACEHOLDER,
+        });
+        if (target_mode_name === undefined) return;
+    }
+    else if (typeof name !== "string") {
+        vsc_window.showErrorMessage("ModalCode: name must be a string");
+        return;
+    }
+    else {
+        target_mode_name = name;
+    }
+
     let mode: Mode;
     search_mode: {
         let mode_index = 0;
+
+        // searching through capturing modes
         for (; mode_index < non_capturing_modes_start_index; ++mode_index) {
             mode = modes[mode_index]!;
-            if (mode.name !== name) continue;
+            if (mode.name !== target_mode_name) continue;
+            if (type_subscription !== undefined) break search_mode;
 
-            if (type_subscription === undefined) {
-                try {
-                    type_subscription = vscode.commands.registerCommand("type", disable_type_command);
-                } catch {
-                    vscode.window.showErrorMessage(`ModalCode: cannot enter '${mode.name}' because the 'type' command is already registered`);
-                    return;
-                }
+            try {
+                type_subscription = vsc_commands.registerCommand("type", disable_type_command);
+            } catch {
+                vsc_window.showErrorMessage(`ModalCode: cannot enter '${mode.name}' because the 'type' command is already registered`);
+                return;
             }
             break search_mode;
         }
 
+        // searching through non-capturing modes
         for (; mode_index < modes.length; ++mode_index) {
             mode = modes[mode_index]!;
-            if (mode.name !== name) continue;
+            if (mode.name === target_mode_name) continue;
+            if (type_subscription === undefined) break search_mode;
 
-            if (type_subscription !== undefined) {
-                type_subscription.dispose();
-                type_subscription = undefined;
-            }
+            type_subscription.dispose();
+            type_subscription = undefined;
             break search_mode;
         }
 
-        vscode.window.showErrorMessage(`ModalCode: mode '${name}' not found`);
+        vsc_window.showErrorMessage(`ModalCode: mode '${target_mode_name}' not found`);
         return;
     }
 
     status_bar_item.text = mode.text;
-    vscode.commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode.name);
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode.name);
 }
