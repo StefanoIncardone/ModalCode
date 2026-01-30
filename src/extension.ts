@@ -75,60 +75,63 @@ export function activate(context: ExtensionContext): void {
         const mode_config = modes_config[mode_index];
 
         if (typeof mode_config !== "object") {
-            vsc_window.showErrorMessage(`ModalCode: mode at index ${mode_index} must be an 'object' but got '${typeof mode_config}'`);
+            vsc_window.showErrorMessage(`ModalCode: mode must be an 'object' but got '${typeof mode_config}' [mode at index ${mode_index}]`);
             return;
         }
         if (mode_config === null) {
-            vsc_window.showErrorMessage(`ModalCode: mode at index ${mode_index} cannot be null`);
+            vsc_window.showErrorMessage(`ModalCode: mode cannot be null [mode at index ${mode_index}]`);
             return;
         }
 
         const { name, capturing, ...unexpected_properties } = mode_config as ModeConfigUnknown;
 
         if (name === undefined) {
-            vsc_window.showErrorMessage(`ModalCode: missing 'name' for mode at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: missing 'name' property [mode at index ${mode_index}]`);
             return;
         }
         if (name === null) {
-            vsc_window.showErrorMessage(`ModalCode: 'name' cannot be null for mode at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: 'name' cannot be null [mode at index ${mode_index}]`);
             return;
         }
         if (typeof name !== "string") {
-            vsc_window.showErrorMessage(`ModalCode: 'name' must be a 'string' but got '${typeof name}' for mode at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: 'name' must be a 'string' but got '${typeof name}' [mode at index ${mode_index}]`);
             return;
         }
         if (name.length < MIN_NAME_LENGTH) {
-            vsc_window.showErrorMessage(`ModalCode: 'name' cannot be shorter than ${MIN_NAME_LENGTH} characters for mode at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: 'name' cannot be shorter than ${MIN_NAME_LENGTH} characters [mode '${name}' at index ${mode_index}]`);
             return;
         }
         if (name.length > MAX_NAME_LENGTH) {
-            vsc_window.showErrorMessage(`ModalColde: 'name' cannot be longer than ${MAX_NAME_LENGTH} characters for mode at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: 'name' cannot be longer than ${MAX_NAME_LENGTH} characters [mode '${name}' at index ${mode_index}]`);
             return;
         }
 
+        // IDEA(stefano): assume capturing === false if property is missing
         if (capturing === undefined) {
-            vsc_window.showErrorMessage(`ModalCode: missing 'capturing' mode property for mode at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: missing 'capturing' property [mode '${name}' at index ${mode_index}]`);
             return;
         }
         if (capturing === null) {
-            vsc_window.showErrorMessage(`ModalCode: 'capturing' mode property cannot be null for mode at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: 'capturing' cannot be null [mode '${name}' at index ${mode_index}]`);
             return;
         }
         if (typeof capturing !== "boolean") {
-            vsc_window.showErrorMessage(`ModalCode: 'capturing' must be a 'boolean' but got '${typeof capturing}' for mode at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: 'capturing' must be a 'boolean' but got '${typeof capturing}' [mode '${name}' at index ${mode_index}]`);
             return;
         }
 
+        // IDEA(stefano): ignore extra properties instead of reporting an error
         for (const _ in unexpected_properties) {
             // TODO(stefano): better error message formatting
-            vsc_window.showErrorMessage(`ModalCode: unexpected '${Object.keys(unexpected_properties).toString()}' for mode '${name}' at index ${mode_index}`);
+            vsc_window.showErrorMessage(`ModalCode: unexpected '${Object.keys(unexpected_properties).toString()}' properties [mode '${name}' at index ${mode_index}]`);
             return;
         }
 
+        // IDEA(stefano): ignore mode instead of reporting an error
         for (let defined_mode_index = 0; defined_mode_index < mode_index; ++defined_mode_index) {
             const mode = modes_config[defined_mode_index] as ModeConfig;
             if (mode.name === name) {
-                vsc_window.showErrorMessage(`ModalCode: found duplicate mode '${mode.name}', already defined at index ${mode_index}`);
+                vsc_window.showErrorMessage(`ModalCode: previously defined at index ${defined_mode_index} [mode '${name}' at index ${mode_index}]`);
                 return;
             }
         }
@@ -231,7 +234,7 @@ async function select_mode(name: unknown): Promise<void> {
         // searching through non-capturing modes
         for (; mode_index < modes.length; ++mode_index) {
             mode = modes[mode_index]!;
-            if (mode.name === target_mode_name) continue;
+            if (mode.name !== target_mode_name) continue;
             if (type_subscription === undefined) break search_mode;
 
             type_subscription.dispose();

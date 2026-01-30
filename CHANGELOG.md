@@ -24,7 +24,7 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 ### Fixed
 
 - Information and error messages now better report their source location
-- Corrected error message for missing `capturing` property
+- Corrected error message
 
 ## 0.1.2 - 2026/01/05
 
