@@ -1,3 +1,5 @@
+// IDEA(stefano): provide option to sort quickpick items by definition order or by capturing/non-capturing
+    // IDEA(stefano): make 'select_command_mode_names' into QuickPickItem[]
 // IDEA(stefano): implement multiple copy/paste buffers
 // IDEA(stefano): implement visual line mode commands
 // IDEA(stefano): implement cursor alignment, to remove the "Cursor Align" extension
@@ -13,6 +15,7 @@ import {
     window as vsc_window,
     workspace as vsc_workspace,
     commands as vsc_commands,
+    QuickPickOptions,
 } from "vscode";
 
 declare global {
@@ -41,55 +44,13 @@ const SELECT_COMMAND = "modalcode.select";
 const SELECT_COMMAND_TOOLTIP = "Select mode";
 const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
 let select_command_modes_names: string[];
+let select_command_options: QuickPickOptions;
 
 let modes: Mode[];
 let non_capturing_modes_start_index: number;
 
 let status_bar_item: StatusBarItem;
 let type_subscription: Disposable | undefined;
-
-function disable_type_command(): void {
-    // disabling the 'type' command
-}
-
-function set_context(mode: Mode): void {
-    status_bar_item.text = mode.text;
-    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode.name);
-}
-
-function set_capturing_mode(mode: Mode): void {
-    if (type_subscription !== undefined) return;
-    try {
-        type_subscription = vsc_commands.registerCommand("type", disable_type_command);
-    } catch {
-        vsc_window.showErrorMessage(`ModalCode: cannot enter '${mode.name}' because the 'type' command is already registered`);
-    }
-}
-
-function enter_capturing_mode(mode: Mode): void {
-    set_capturing_mode(mode);
-    set_context(mode);
-}
-
-function set_non_capturing_mode(): void {
-    if (type_subscription === undefined) return;
-    type_subscription.dispose();
-    type_subscription = undefined;
-}
-
-function enter_non_capturing_mode(mode: Mode): void {
-    set_non_capturing_mode();
-    set_context(mode);
-}
-
-function enter_mode(mode: Mode, is_capturing: boolean): void {
-    if (is_capturing) {
-        enter_capturing_mode(mode);
-    }
-    else {
-        enter_non_capturing_mode(mode);
-    }
-}
 
 export function activate(context: ExtensionContext): void {
     interface ModeConfigUnknown {
@@ -103,6 +64,7 @@ export function activate(context: ExtensionContext): void {
         readonly capturing: boolean;
     }
 
+    // TODO(stefano): extract validation steps to type guard functions
     const modes_config = vsc_workspace.getConfiguration("modalcode").get("modes");
     if (modes_config === undefined) return;
     if (modes_config === null) {
@@ -193,15 +155,17 @@ export function activate(context: ExtensionContext): void {
     modes = Array<Mode>(modes_config.length);
     select_command_modes_names = Array<string>(modes.length);
 
-    let capturing_modes_start_index = 0;
+    // BUG(stefano): non-capturing modes are in reverse order of definition
+    let capturing_modes_end_index = 0;
     non_capturing_modes_start_index = modes.length;
     for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
         const mode_config = modes_config[mode_index] as ModeConfig;
         const mode = new Mode(mode_config.name);
         select_command_modes_names[mode_index] = mode.name;
         if (mode_config.capturing) {
-            modes[capturing_modes_start_index++] = mode;
-        } else {
+            modes[capturing_modes_end_index++] = mode;
+        }
+        else {
             modes[--non_capturing_modes_start_index] = mode;
         }
     }
@@ -214,9 +178,20 @@ export function activate(context: ExtensionContext): void {
     const select_mode_command = vsc_commands.registerCommand(SELECT_COMMAND, select_mode);
     context.subscriptions.push(select_mode_command, status_bar_item);
 
+    select_command_options = {
+        canPickMany: false,
+        title: SELECT_COMMAND_TOOLTIP,
+        placeHolder: SELECT_COMMAND_PLACEHOLDER,
+    };
+
     const starting_mode_config = modes_config[0] as ModeConfig;
     const starting_mode = new Mode(starting_mode_config.name);
-    enter_mode(starting_mode, starting_mode_config.capturing);
+    if (starting_mode_config.capturing) {
+        enter_capturing_mode(starting_mode);
+    }
+    else {
+        enter_non_capturing_mode(starting_mode);
+    }
 }
 
 export function deactivate(): void {
@@ -224,31 +199,48 @@ export function deactivate(): void {
     vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, undefined);
 }
 
-async function select_mode(name: unknown): Promise<void> {
-    // TODO(stefano): remove intermediate variable 'target_mode_name'
-    let target_mode_name: string | undefined;
-    if (name === undefined) {
-        target_mode_name = await vsc_window.showQuickPick(select_command_modes_names, {
-            canPickMany: false,
-            title: SELECT_COMMAND_TOOLTIP,
-            placeHolder: SELECT_COMMAND_PLACEHOLDER,
-        });
-        if (target_mode_name === undefined) return;
-    }
-    else if (typeof name !== "string") {
-        vsc_window.showErrorMessage("ModalCode: name must be a string");
-        return;
-    }
-    else {
-        target_mode_name = name;
-    }
+function set_context(mode: Mode): void {
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode.name);
+    status_bar_item.text = mode.text;
+}
 
+function disable_type_command(): void {
+    // disabling the 'type' command
+}
+
+function set_capturing_mode(mode: Mode): void {
+    if (type_subscription !== undefined) return;
+    try {
+        type_subscription = vsc_commands.registerCommand("type", disable_type_command);
+    } catch {
+        vsc_window.showErrorMessage(`ModalCode: cannot enter '${mode.name}' because the 'type' command is already registered`);
+    }
+}
+
+function enter_capturing_mode(mode: Mode): void {
+    set_capturing_mode(mode);
+    set_context(mode);
+}
+
+function set_non_capturing_mode(): void {
+    if (type_subscription === undefined) return;
+    type_subscription.dispose();
+    type_subscription = undefined;
+}
+
+function enter_non_capturing_mode(mode: Mode): void {
+    set_non_capturing_mode();
+    set_context(mode);
+}
+
+/** This function exists just to satisfy the type checker */
+function set_mode(name: string): void {
     let mode_index = 0;
 
     // searching through capturing modes
     for (; mode_index < non_capturing_modes_start_index; ++mode_index) {
         const mode = modes[mode_index]!;
-        if (mode.name !== target_mode_name) continue;
+        if (mode.name !== name) continue;
         enter_capturing_mode(mode);
         return;
     }
@@ -256,10 +248,22 @@ async function select_mode(name: unknown): Promise<void> {
     // searching through non-capturing modes
     for (; mode_index < modes.length; ++mode_index) {
         const mode = modes[mode_index]!;
-        if (mode.name !== target_mode_name) continue;
+        if (mode.name !== name) continue;
         enter_non_capturing_mode(mode);
         return;
     }
 
-    vsc_window.showErrorMessage(`ModalCode: mode '${target_mode_name}' not found`);
+    vsc_window.showErrorMessage(`ModalCode: mode '${name}' not found`);
+}
+
+async function select_mode(name: unknown): Promise<void> {
+    if (name === undefined) {
+        name = await vsc_window.showQuickPick(select_command_modes_names, select_command_options);
+        if (name === undefined) return;
+    }
+    else if (typeof name !== "string") {
+        vsc_window.showErrorMessage("ModalCode: name must be a string");
+        return;
+    }
+    set_mode(name as string);
 }
