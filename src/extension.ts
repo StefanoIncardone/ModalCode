@@ -48,6 +48,49 @@ let non_capturing_modes_start_index: number;
 let status_bar_item: StatusBarItem;
 let type_subscription: Disposable | undefined;
 
+function disable_type_command(): void {
+    // disabling the 'type' command
+}
+
+function set_context(mode: Mode): void {
+    status_bar_item.text = mode.text;
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode.name);
+}
+
+function set_capturing_mode(mode: Mode): void {
+    if (type_subscription !== undefined) return;
+    try {
+        type_subscription = vsc_commands.registerCommand("type", disable_type_command);
+    } catch {
+        vsc_window.showErrorMessage(`ModalCode: cannot enter '${mode.name}' because the 'type' command is already registered`);
+    }
+}
+
+function enter_capturing_mode(mode: Mode): void {
+    set_capturing_mode(mode);
+    set_context(mode);
+}
+
+function set_non_capturing_mode(): void {
+    if (type_subscription === undefined) return;
+    type_subscription.dispose();
+    type_subscription = undefined;
+}
+
+function enter_non_capturing_mode(mode: Mode): void {
+    set_non_capturing_mode();
+    set_context(mode);
+}
+
+function enter_mode(mode: Mode, is_capturing: boolean): void {
+    if (is_capturing) {
+        enter_capturing_mode(mode);
+    }
+    else {
+        enter_non_capturing_mode(mode);
+    }
+}
+
 export function activate(context: ExtensionContext): void {
     interface ModeConfigUnknown {
         readonly name?: unknown;
@@ -140,7 +183,7 @@ export function activate(context: ExtensionContext): void {
         // IDEA(stefano): ignore mode instead of reporting an error
         for (let defined_mode_index = 0; defined_mode_index < mode_index; ++defined_mode_index) {
             const mode = modes_config[defined_mode_index] as ModeConfig;
-            if (mode.name === name) continue;
+            if (mode.name !== name) continue;
 
             vsc_window.showErrorMessage(`ModalCode: previously defined at index ${defined_mode_index} [mode '${name}' at index ${mode_index}]`);
             return;
@@ -152,24 +195,7 @@ export function activate(context: ExtensionContext): void {
 
     let capturing_modes_start_index = 0;
     non_capturing_modes_start_index = modes.length;
-
-    const starting_mode_config = modes_config[0] as ModeConfig;
-    const starting_mode = new Mode(starting_mode_config.name);
-    select_command_modes_names[0] = starting_mode.name;
-    if (starting_mode_config.capturing) {
-        try {
-            type_subscription = vsc_commands.registerCommand("type", disable_type_command);
-        } catch {
-            vsc_window.showErrorMessage(`ModalCode: cannot enter '${starting_mode.name}' because the 'type' command is already registered`);
-            return;
-        }
-
-        modes[capturing_modes_start_index++] = starting_mode;
-    } else {
-        modes[--non_capturing_modes_start_index] = starting_mode;
-    }
-
-    for (let mode_index = 1; mode_index < modes_config.length; ++mode_index) {
+    for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
         const mode_config = modes_config[mode_index] as ModeConfig;
         const mode = new Mode(mode_config.name);
         select_command_modes_names[mode_index] = mode.name;
@@ -183,27 +209,23 @@ export function activate(context: ExtensionContext): void {
     status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, 9999999999);
     status_bar_item.command = SELECT_COMMAND;
     status_bar_item.tooltip = SELECT_COMMAND_TOOLTIP;
-    status_bar_item.text = starting_mode.text;
     status_bar_item.show();
 
     const select_mode_command = vsc_commands.registerCommand(SELECT_COMMAND, select_mode);
     context.subscriptions.push(select_mode_command, status_bar_item);
 
-    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, starting_mode.name);
+    const starting_mode_config = modes_config[0] as ModeConfig;
+    const starting_mode = new Mode(starting_mode_config.name);
+    enter_mode(starting_mode, starting_mode_config.capturing);
 }
 
 export function deactivate(): void {
+    set_non_capturing_mode();
     vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, undefined);
-    if (type_subscription === undefined) return;
-    type_subscription.dispose();
-    type_subscription = undefined;
-}
-
-function disable_type_command(): void {
-    // disabling the 'type' command
 }
 
 async function select_mode(name: unknown): Promise<void> {
+    // TODO(stefano): remove intermediate variable 'target_mode_name'
     let target_mode_name: string | undefined;
     if (name === undefined) {
         target_mode_name = await vsc_window.showQuickPick(select_command_modes_names, {
@@ -221,40 +243,23 @@ async function select_mode(name: unknown): Promise<void> {
         target_mode_name = name;
     }
 
-    let mode: Mode;
-    search_mode: {
-        let mode_index = 0;
+    let mode_index = 0;
 
-        // searching through capturing modes
-        for (; mode_index < non_capturing_modes_start_index; ++mode_index) {
-            mode = modes[mode_index]!;
-            if (mode.name !== target_mode_name) continue;
-
-            if (type_subscription !== undefined) break search_mode;
-            try {
-                type_subscription = vsc_commands.registerCommand("type", disable_type_command);
-            } catch {
-                vsc_window.showErrorMessage(`ModalCode: cannot enter '${mode.name}' because the 'type' command is already registered`);
-                return;
-            }
-            break search_mode;
-        }
-
-        // searching through non-capturing modes
-        for (; mode_index < modes.length; ++mode_index) {
-            mode = modes[mode_index]!;
-            if (mode.name !== target_mode_name) continue;
-
-            if (type_subscription === undefined) break search_mode;
-            type_subscription.dispose();
-            type_subscription = undefined;
-            break search_mode;
-        }
-
-        vsc_window.showErrorMessage(`ModalCode: mode '${target_mode_name}' not found`);
+    // searching through capturing modes
+    for (; mode_index < non_capturing_modes_start_index; ++mode_index) {
+        const mode = modes[mode_index]!;
+        if (mode.name !== target_mode_name) continue;
+        enter_capturing_mode(mode);
         return;
     }
 
-    status_bar_item.text = mode.text;
-    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode.name);
+    // searching through non-capturing modes
+    for (; mode_index < modes.length; ++mode_index) {
+        const mode = modes[mode_index]!;
+        if (mode.name !== target_mode_name) continue;
+        enter_non_capturing_mode(mode);
+        return;
+    }
+
+    vsc_window.showErrorMessage(`ModalCode: mode '${target_mode_name}' not found`);
 }
