@@ -12,13 +12,18 @@ import {
     StatusBarItem,
     window as vsc_window,
     workspace as vsc_workspace,
-    commands as vsc_commands
+    commands as vsc_commands,
 } from "vscode";
 
 declare global {
     interface ArrayConstructor {
         isArray(a: unknown): a is unknown[];
     }
+}
+
+function has_keys(obj: object) {
+    for (const _ in obj) return true;
+    return false;
 }
 
 class Mode {
@@ -106,7 +111,6 @@ export function activate(context: ExtensionContext): void {
             return;
         }
 
-        // IDEA(stefano): assume capturing === false if property is missing
         if (capturing === undefined) {
             vsc_window.showErrorMessage(`ModalCode: missing 'capturing' property [mode '${name}' at index ${mode_index}]`);
             return;
@@ -120,20 +124,26 @@ export function activate(context: ExtensionContext): void {
             return;
         }
 
-        // IDEA(stefano): ignore extra properties instead of reporting an error
-        for (const _ in unexpected_properties) {
-            // TODO(stefano): better error message formatting
-            vsc_window.showErrorMessage(`ModalCode: unexpected '${Object.keys(unexpected_properties).toString()}' properties [mode '${name}' at index ${mode_index}]`);
+        if (has_keys(unexpected_properties)) {
+            const unexptected_properties_array = Object.keys(unexpected_properties);
+            const first_unexpected_property = unexptected_properties_array[0]!;
+            let unexpected_properties_string = `'${first_unexpected_property}'`;
+            for (let i = 1; i < unexptected_properties_array.length; ++i) {
+                const property = unexptected_properties_array[i]!;
+                unexpected_properties_string += `, '${property}'`;
+            }
+
+            vsc_window.showWarningMessage(`ModalCode: unexpected ${unexpected_properties_string} properties [mode '${name}' at index ${mode_index}]`);
             return;
         }
 
         // IDEA(stefano): ignore mode instead of reporting an error
         for (let defined_mode_index = 0; defined_mode_index < mode_index; ++defined_mode_index) {
             const mode = modes_config[defined_mode_index] as ModeConfig;
-            if (mode.name === name) {
-                vsc_window.showErrorMessage(`ModalCode: previously defined at index ${defined_mode_index} [mode '${name}' at index ${mode_index}]`);
-                return;
-            }
+            if (mode.name === name) continue;
+
+            vsc_window.showErrorMessage(`ModalCode: previously defined at index ${defined_mode_index} [mode '${name}' at index ${mode_index}]`);
+            return;
         }
     }
 
@@ -184,10 +194,9 @@ export function activate(context: ExtensionContext): void {
 
 export function deactivate(): void {
     vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, undefined);
-    if (type_subscription !== undefined) {
-        type_subscription.dispose();
-        type_subscription = undefined;
-    }
+    if (type_subscription === undefined) return;
+    type_subscription.dispose();
+    type_subscription = undefined;
 }
 
 function disable_type_command(): void {
@@ -220,8 +229,8 @@ async function select_mode(name: unknown): Promise<void> {
         for (; mode_index < non_capturing_modes_start_index; ++mode_index) {
             mode = modes[mode_index]!;
             if (mode.name !== target_mode_name) continue;
-            if (type_subscription !== undefined) break search_mode;
 
+            if (type_subscription !== undefined) break search_mode;
             try {
                 type_subscription = vsc_commands.registerCommand("type", disable_type_command);
             } catch {
@@ -235,8 +244,8 @@ async function select_mode(name: unknown): Promise<void> {
         for (; mode_index < modes.length; ++mode_index) {
             mode = modes[mode_index]!;
             if (mode.name !== target_mode_name) continue;
-            if (type_subscription === undefined) break search_mode;
 
+            if (type_subscription === undefined) break search_mode;
             type_subscription.dispose();
             type_subscription = undefined;
             break search_mode;
