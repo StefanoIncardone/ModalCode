@@ -15,6 +15,10 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 ## 0.1.3 -
 
+### Added
+
+- `modalcode.select_mode`'s quick's items now display wether the mode captures typing events
+
 ### Changed
 
 - Merged `modalcode.enter_mode` with `modalcode.select_mode`, they are now `modalcode.select`

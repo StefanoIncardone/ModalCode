@@ -1,5 +1,4 @@
 // IDEA(stefano): provide option to sort quickpick items by definition order or by capturing/non-capturing
-    // IDEA(stefano): make 'select_command_mode_names' into QuickPickItem[]
 // IDEA(stefano): implement multiple copy/paste buffers
 // IDEA(stefano): implement visual line mode commands
 // IDEA(stefano): implement cursor alignment, to remove the "Cursor Align" extension
@@ -15,7 +14,7 @@ import {
     window as vsc_window,
     workspace as vsc_workspace,
     commands as vsc_commands,
-    QuickPickOptions,
+    QuickPickItem,
 } from "vscode";
 
 declare global {
@@ -44,8 +43,10 @@ const SELECT_COMMAND = "modalcode.select";
 const SELECT_COMMAND_TOOLTIP = "Select mode";
 const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
 /** In order of definition in settings.json */
-let select_command_modes_names: string[];
-let select_command_options: QuickPickOptions;
+let select_command_items: QuickPickItem[];
+
+const CAPTURING_MODE_LABEL = "Capturing";
+const NON_CAPTURING_MODE_LABEL = "Non Capturing";
 
 /** Ordered by capturing/non-capturing */
 let modes: Mode[];
@@ -158,21 +159,24 @@ export function activate(context: ExtensionContext): void {
         }
     }
 
-    modes = Array<Mode>(modes_config.length);
-    select_command_modes_names = Array<string>(modes.length);
+    modes = Array<typeof modes[0]>(modes_config.length);
+    select_command_items = Array<typeof select_command_items[0]>(modes.length);
 
     let capturing_modes_end_index = 0;
     for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
         const mode_config = modes_config[mode_index] as ModeConfig;
         const mode = new Mode(mode_config.name);
 
-        select_command_modes_names[mode_index] = mode.name;
+        const quick_pick_item: QuickPickItem = { label: mode.name };
         if (mode_config.capturing) {
             modes[capturing_modes_end_index++] = mode;
+            quick_pick_item.description = CAPTURING_MODE_LABEL;
         }
         else {
             modes[non_capturing_modes_start_index++] = mode;
+            quick_pick_item.description = NON_CAPTURING_MODE_LABEL;
         }
+        select_command_items[mode_index] = quick_pick_item;
     }
     non_capturing_modes_start_index = capturing_modes_end_index;
 
@@ -183,12 +187,6 @@ export function activate(context: ExtensionContext): void {
 
     const select_mode_command = vsc_commands.registerCommand(SELECT_COMMAND, select_mode);
     context.subscriptions.push(select_mode_command, status_bar_item);
-
-    select_command_options = {
-        canPickMany: false,
-        title: SELECT_COMMAND_TOOLTIP,
-        placeHolder: SELECT_COMMAND_PLACEHOLDER,
-    };
 
     const starting_mode_config = modes_config[0] as ModeConfig;
     const starting_mode = new Mode(starting_mode_config.name);
@@ -262,11 +260,15 @@ function set_mode(name: string): void {
 
 async function select_mode(name: unknown): Promise<void> {
     if (name === undefined) {
-        name = await vsc_window.showQuickPick(select_command_modes_names, select_command_options);
+        name = await vsc_window.showQuickPick(select_command_items, {
+            canPickMany: false,
+            title: SELECT_COMMAND_TOOLTIP,
+            placeHolder: SELECT_COMMAND_PLACEHOLDER,
+        });
         if (name === undefined) return;
     }
     else if (typeof name !== "string") {
-        vsc_window.showErrorMessage("ModalCode: name must be a string");
+        vsc_window.showErrorMessage(`ModalCode: mode name must be a 'string' but got '${typeof name}'`);
         return;
     }
     set_mode(name as string);
