@@ -43,9 +43,11 @@ const MODE_CONTEXT_KEY = "modalcode.mode";
 const SELECT_COMMAND = "modalcode.select";
 const SELECT_COMMAND_TOOLTIP = "Select mode";
 const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
+/** In order of definition in settings.json */
 let select_command_modes_names: string[];
 let select_command_options: QuickPickOptions;
 
+/** Ordered by capturing/non-capturing */
 let modes: Mode[];
 let non_capturing_modes_start_index: number;
 
@@ -64,11 +66,10 @@ export function activate(context: ExtensionContext): void {
         readonly capturing: boolean;
     }
 
-    // TODO(stefano): extract validation steps to type guard functions
     const modes_config = vsc_workspace.getConfiguration("modalcode").get("modes");
     if (modes_config === undefined) return;
     if (modes_config === null) {
-        vsc_window.showInformationMessage("ModalCode: 'modalcode.modes' cannot be null");
+        vsc_window.showErrorMessage("ModalCode: 'modalcode.modes' cannot be null");
         return;
     }
     if (!Array.isArray(modes_config)) {
@@ -79,6 +80,7 @@ export function activate(context: ExtensionContext): void {
 
     const MIN_NAME_LENGTH = 1;
     const MAX_NAME_LENGTH = 16;
+    non_capturing_modes_start_index = 0;
 
     // IDEA(stefano): report errors for all modes and then terminate activation
     for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
@@ -150,25 +152,29 @@ export function activate(context: ExtensionContext): void {
             vsc_window.showErrorMessage(`ModalCode: previously defined at index ${defined_mode_index} [mode '${name}' at index ${mode_index}]`);
             return;
         }
+
+        if (capturing) {
+            ++non_capturing_modes_start_index;
+        }
     }
 
     modes = Array<Mode>(modes_config.length);
     select_command_modes_names = Array<string>(modes.length);
 
-    // BUG(stefano): non-capturing modes are in reverse order of definition
     let capturing_modes_end_index = 0;
-    non_capturing_modes_start_index = modes.length;
     for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
         const mode_config = modes_config[mode_index] as ModeConfig;
         const mode = new Mode(mode_config.name);
+
         select_command_modes_names[mode_index] = mode.name;
         if (mode_config.capturing) {
             modes[capturing_modes_end_index++] = mode;
         }
         else {
-            modes[--non_capturing_modes_start_index] = mode;
+            modes[non_capturing_modes_start_index++] = mode;
         }
     }
+    non_capturing_modes_start_index = capturing_modes_end_index;
 
     status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, 9999999999);
     status_bar_item.command = SELECT_COMMAND;
@@ -186,11 +192,9 @@ export function activate(context: ExtensionContext): void {
 
     const starting_mode_config = modes_config[0] as ModeConfig;
     const starting_mode = new Mode(starting_mode_config.name);
+    // Note: ignoring non-capturing modes since type_subscription has not yet been set
     if (starting_mode_config.capturing) {
         enter_capturing_mode(starting_mode);
-    }
-    else {
-        enter_non_capturing_mode(starting_mode);
     }
 }
 
