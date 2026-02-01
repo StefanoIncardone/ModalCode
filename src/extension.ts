@@ -28,45 +28,39 @@ function has_keys(obj: object) {
     return false;
 }
 
-class Mode {
-    public name: string;
-    public text: string;
+const MIN_NAME_LENGTH = 1;
+const MAX_NAME_LENGTH = 16;
 
-    constructor(name: string) {
-        this.name = name;
-        this.text = `-- ${name} --`;
-    }
+interface ModeConfigUnknown {
+    readonly name?: unknown;
+    readonly capturing?: unknown;
+    readonly [key: string]: unknown;
 }
+
+interface ModeConfig {
+    readonly name: string;
+    readonly capturing: boolean;
+}
+
+interface Mode extends ModeConfig {
+    readonly text: string;
+}
+
+const CAPTURING_MODE_DESCRIPTION = "Capturing";
+const NON_CAPTURING_MODE_DESCRIPTION = "Non Capturing";
+
+let modes: Map<string, Mode>;
 
 const MODE_CONTEXT_KEY = "modalcode.mode";
 const SELECT_COMMAND = "modalcode.select";
 const SELECT_COMMAND_TOOLTIP = "Select mode";
 const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
-/** In order of definition in settings.json */
-let select_command_items: QuickPickItem[];
-
-const CAPTURING_MODE_LABEL = "Capturing";
-const NON_CAPTURING_MODE_LABEL = "Non Capturing";
-
-/** Ordered by capturing/non-capturing */
-let modes: Mode[];
-let non_capturing_modes_start_index: number;
 
 let status_bar_item: StatusBarItem;
 let type_subscription: Disposable | undefined;
 
 export function activate(context: ExtensionContext): void {
-    interface ModeConfigUnknown {
-        readonly name?: unknown;
-        readonly capturing?: unknown;
-        readonly [key: string]: unknown;
-    }
-
-    interface ModeConfig {
-        readonly name: string;
-        readonly capturing: boolean;
-    }
-
+    // TODO(stefano): remove quotes around types in error messages
     const modes_config = vsc_workspace.getConfiguration("modalcode").get("modes");
     if (modes_config === undefined) return;
     if (modes_config === null) {
@@ -79,20 +73,16 @@ export function activate(context: ExtensionContext): void {
     }
     if (modes_config.length === 0) return;
 
-    const MIN_NAME_LENGTH = 1;
-    const MAX_NAME_LENGTH = 16;
-    non_capturing_modes_start_index = 0;
-
     // IDEA(stefano): report errors for all modes and then terminate activation
     for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
         const mode_config = modes_config[mode_index];
 
-        if (typeof mode_config !== "object") {
-            vsc_window.showErrorMessage(`ModalCode: mode must be an 'object' but got '${typeof mode_config}' [mode at index ${mode_index}]`);
-            return;
-        }
         if (mode_config === null) {
             vsc_window.showErrorMessage(`ModalCode: mode cannot be null [mode at index ${mode_index}]`);
+            return;
+        }
+        if (typeof mode_config !== "object") {
+            vsc_window.showErrorMessage(`ModalCode: mode must be an 'object' but got '${typeof mode_config}' [mode at index ${mode_index}]`);
             return;
         }
 
@@ -153,114 +143,75 @@ export function activate(context: ExtensionContext): void {
             vsc_window.showErrorMessage(`ModalCode: previously defined at index ${defined_mode_index} [mode '${name}' at index ${mode_index}]`);
             return;
         }
-
-        if (capturing) {
-            ++non_capturing_modes_start_index;
-        }
     }
 
-    modes = Array<typeof modes[0]>(modes_config.length);
-    select_command_items = Array<typeof select_command_items[0]>(modes.length);
+    modes = new Map();
+    const starting_mode = modes_config[0] as ModeConfig;
+    mode_from_config(starting_mode);
+    modes.set(starting_mode.name, starting_mode);
 
-    let capturing_modes_end_index = 0;
-    for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
-        const mode_config = modes_config[mode_index] as ModeConfig;
-        const mode = new Mode(mode_config.name);
-
-        const quick_pick_item: QuickPickItem = { label: mode.name };
-        if (mode_config.capturing) {
-            modes[capturing_modes_end_index++] = mode;
-            quick_pick_item.description = CAPTURING_MODE_LABEL;
-        }
-        else {
-            modes[non_capturing_modes_start_index++] = mode;
-            quick_pick_item.description = NON_CAPTURING_MODE_LABEL;
-        }
-        select_command_items[mode_index] = quick_pick_item;
+    for (let mode_index = 1; mode_index < modes_config.length; ++mode_index) {
+        const mode = modes_config[mode_index] as ModeConfig;
+        mode_from_config(mode);
+        modes.set(mode.name,  mode);
     }
-    non_capturing_modes_start_index = capturing_modes_end_index;
+
+    // Note: ignoring non-capturing modes since type_subscription has not yet been set
+    if (starting_mode.capturing) {
+        mode_set_capturing(starting_mode);
+    }
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, starting_mode.name);
 
     status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, 9999999999);
     status_bar_item.command = SELECT_COMMAND;
     status_bar_item.tooltip = SELECT_COMMAND_TOOLTIP;
+    status_bar_item.text = starting_mode.text;
     status_bar_item.show();
 
     const select_mode_command = vsc_commands.registerCommand(SELECT_COMMAND, select_mode);
     context.subscriptions.push(select_mode_command, status_bar_item);
-
-    const starting_mode_config = modes_config[0] as ModeConfig;
-    const starting_mode = new Mode(starting_mode_config.name);
-    // Note: ignoring non-capturing modes since type_subscription has not yet been set
-    if (starting_mode_config.capturing) {
-        enter_capturing_mode(starting_mode);
-    }
 }
 
 export function deactivate(): void {
-    set_non_capturing_mode();
+    mode_set_non_capturing();
     vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, undefined);
 }
 
-function set_context(mode: Mode): void {
-    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode.name);
-    status_bar_item.text = mode.text;
-}
-
-function disable_type_command(): void {
+function ignore_type_commands(): void {
     // disabling the 'type' command
 }
 
-function set_capturing_mode(mode: Mode): void {
+function mode_from_config(config: ModeConfig): asserts config is Mode {
+    (config as typeof config & { text: string }).text = `-- ${config.name} --`;
+}
+
+function mode_set_capturing(self: Mode): void {
     if (type_subscription !== undefined) return;
     try {
-        type_subscription = vsc_commands.registerCommand("type", disable_type_command);
+        type_subscription = vsc_commands.registerCommand("type", ignore_type_commands);
     } catch {
-        vsc_window.showErrorMessage(`ModalCode: cannot enter '${mode.name}' because the 'type' command is already registered`);
+        vsc_window.showErrorMessage(`ModalCode: cannot enter '${self.name}' because the 'type' command is already registered`);
     }
 }
 
-function enter_capturing_mode(mode: Mode): void {
-    set_capturing_mode(mode);
-    set_context(mode);
-}
-
-function set_non_capturing_mode(): void {
+function mode_set_non_capturing(): void {
     if (type_subscription === undefined) return;
     type_subscription.dispose();
     type_subscription = undefined;
 }
 
-function enter_non_capturing_mode(mode: Mode): void {
-    set_non_capturing_mode();
-    set_context(mode);
-}
-
-/** This function exists just to satisfy the type checker */
-function set_mode(name: string): void {
-    let mode_index = 0;
-
-    // searching through capturing modes
-    for (; mode_index < non_capturing_modes_start_index; ++mode_index) {
-        const mode = modes[mode_index]!;
-        if (mode.name !== name) continue;
-        enter_capturing_mode(mode);
-        return;
-    }
-
-    // searching through non-capturing modes
-    for (; mode_index < modes.length; ++mode_index) {
-        const mode = modes[mode_index]!;
-        if (mode.name !== name) continue;
-        enter_non_capturing_mode(mode);
-        return;
-    }
-
-    vsc_window.showErrorMessage(`ModalCode: mode '${name}' not found`);
-}
-
 async function select_mode(name: unknown): Promise<void> {
     if (name === undefined) {
-        name = await vsc_window.showQuickPick(select_command_items, {
+        // Note: rebuilding the quick pick items each time since this command is not expected to be
+        // used often
+        const quick_pick_items: QuickPickItem[] = [];
+        for (const [_, mode] of modes) {
+            const description = mode.capturing ? CAPTURING_MODE_DESCRIPTION : NON_CAPTURING_MODE_DESCRIPTION;
+            const quick_pick_item: QuickPickItem = { label: mode.name, description };
+            quick_pick_items.push(quick_pick_item);
+        }
+
+        name = await vsc_window.showQuickPick(quick_pick_items, {
             canPickMany: false,
             title: SELECT_COMMAND_TOOLTIP,
             placeHolder: SELECT_COMMAND_PLACEHOLDER,
@@ -271,5 +222,20 @@ async function select_mode(name: unknown): Promise<void> {
         vsc_window.showErrorMessage(`ModalCode: mode name must be a 'string' but got '${typeof name}'`);
         return;
     }
-    set_mode(name as string);
+
+    const mode = modes.get(name as string);
+    if (mode === undefined) {
+        vsc_window.showErrorMessage(`ModalCode: mode '${name as string}' not found`);
+        return;
+    }
+
+    if (mode.capturing) {
+        mode_set_capturing(mode);
+    }
+    else {
+        mode_set_non_capturing();
+    }
+
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, self.name);
+    status_bar_item.text = mode.text;
 }
