@@ -61,21 +61,21 @@ let type_subscription: Disposable | undefined;
 
 export function activate(context: ExtensionContext): void {
     // TODO(stefano): remove quotes around types in error messages
-    const modes_config = vsc_workspace.getConfiguration("modalcode").get("modes");
-    if (modes_config === undefined) return;
-    if (modes_config === null) {
+    const modalcode_modes = vsc_workspace.getConfiguration("modalcode").get("modes");
+    if (modalcode_modes === undefined) return;
+    if (modalcode_modes === null) {
         vsc_window.showErrorMessage("ModalCode: 'modalcode.modes' cannot be null");
         return;
     }
-    if (!Array.isArray(modes_config)) {
-        vsc_window.showErrorMessage(`ModalCode: 'modalcode.modes' must be an 'array' but got '${typeof modes_config}'`);
+    if (!Array.isArray(modalcode_modes)) {
+        vsc_window.showErrorMessage(`ModalCode: 'modalcode.modes' must be an 'array' but got '${typeof modalcode_modes}'`);
         return;
     }
-    if (modes_config.length === 0) return;
+    if (modalcode_modes.length === 0) return;
 
     // IDEA(stefano): report errors for all modes and then terminate activation
-    for (let mode_index = 0; mode_index < modes_config.length; ++mode_index) {
-        const mode_config = modes_config[mode_index];
+    for (let mode_index = 0; mode_index < modalcode_modes.length; ++mode_index) {
+        const mode_config = modalcode_modes[mode_index];
 
         if (mode_config === null) {
             vsc_window.showErrorMessage(`ModalCode: mode cannot be null [mode at index ${mode_index}]`);
@@ -137,7 +137,7 @@ export function activate(context: ExtensionContext): void {
 
         // IDEA(stefano): ignore mode instead of reporting an error
         for (let defined_mode_index = 0; defined_mode_index < mode_index; ++defined_mode_index) {
-            const mode = modes_config[defined_mode_index] as ModeConfig;
+            const mode = modalcode_modes[defined_mode_index] as ModeConfig;
             if (mode.name !== name) continue;
 
             vsc_window.showErrorMessage(`ModalCode: previously defined at index ${defined_mode_index} [mode '${name}' at index ${mode_index}]`);
@@ -146,12 +146,12 @@ export function activate(context: ExtensionContext): void {
     }
 
     modes = new Map();
-    const starting_mode = modes_config[0] as ModeConfig;
+    const starting_mode = modalcode_modes[0] as ModeConfig;
     mode_from_config(starting_mode);
     modes.set(starting_mode.name, starting_mode);
 
-    for (let mode_index = 1; mode_index < modes_config.length; ++mode_index) {
-        const mode = modes_config[mode_index] as ModeConfig;
+    for (let mode_index = 1; mode_index < modalcode_modes.length; ++mode_index) {
+        const mode = modalcode_modes[mode_index] as ModeConfig;
         mode_from_config(mode);
         modes.set(mode.name,  mode);
     }
