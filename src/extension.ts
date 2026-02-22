@@ -60,7 +60,6 @@ let status_bar_item: StatusBarItem;
 let type_subscription: Disposable | undefined;
 
 export function activate(context: ExtensionContext): void {
-    // TODO(stefano): remove quotes around types in error messages
     const modalcode_modes = vsc_workspace.getConfiguration("modalcode").get("modes");
     if (modalcode_modes === undefined) return;
     if (modalcode_modes === null) {
@@ -68,7 +67,7 @@ export function activate(context: ExtensionContext): void {
         return;
     }
     if (!Array.isArray(modalcode_modes)) {
-        vsc_window.showErrorMessage(`ModalCode: 'modalcode.modes' must be an 'array' but got '${typeof modalcode_modes}'`);
+        vsc_window.showErrorMessage(`ModalCode: 'modalcode.modes' must be an array but got '${typeof modalcode_modes}'`);
         return;
     }
     if (modalcode_modes.length === 0) return;
@@ -82,7 +81,7 @@ export function activate(context: ExtensionContext): void {
             return;
         }
         if (typeof mode_config !== "object") {
-            vsc_window.showErrorMessage(`ModalCode: mode must be an 'object' but got '${typeof mode_config}' [mode at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`ModalCode: mode must be an object but got '${typeof mode_config}' [mode at index ${mode_index}]`);
             return;
         }
 
@@ -97,7 +96,7 @@ export function activate(context: ExtensionContext): void {
             return;
         }
         if (typeof name !== "string") {
-            vsc_window.showErrorMessage(`ModalCode: 'name' must be a 'string' but got '${typeof name}' [mode at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`ModalCode: 'name' must be a string but got '${typeof name}' [mode at index ${mode_index}]`);
             return;
         }
         if (name.length < MIN_NAME_LENGTH) {
@@ -118,7 +117,7 @@ export function activate(context: ExtensionContext): void {
             return;
         }
         if (typeof capturing !== "boolean") {
-            vsc_window.showErrorMessage(`ModalCode: 'capturing' must be a 'boolean' but got '${typeof capturing}' [mode '${name}' at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`ModalCode: 'capturing' must be a boolean but got '${typeof capturing}' [mode '${name}' at index ${mode_index}]`);
             return;
         }
 
