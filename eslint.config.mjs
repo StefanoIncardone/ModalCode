@@ -4,33 +4,89 @@ import tseslint from "typescript-eslint";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+    eslint.configs.all,
+    ...tseslint.configs.all,
     {
         files: ["src/**/*.ts"],
     },
     {
-        ignores: ["out", "out_old", "*.mjs"],
+        ignores: ["out", "saved_for_later", "*.mjs"],
     },
     {
         linterOptions: {
             reportUnusedDisableDirectives: "warn",
+            reportUnusedInlineConfigs: "warn",
         },
         languageOptions: {
             globals: {
                 ...globals.browser,
-                ...globals.node
+                ...globals.node,
             },
-            parser: "@typescript-eslint/parser",
+            parser: tseslint.parser,
             parserOptions: {
                 projectService: true,
             },
             sourceType: "module",
         },
+        // TODO(stefano): add "documentation" comments as to why a lint might be enabled/disabled
         rules: {
+            "semi": "error",
+            "curly": "off",
+            "eqeqeq": "error",
+            "no-throw-literal": "warn",
+            "no-implicit-coercion": "error",
+            "no-constructor-return": "error",
+            "no-duplicate-imports": "error",
+            "no-self-compare": "error",
+            "no-template-curly-in-string": "warn",
+            "no-unmodified-loop-condition": "warn",
+            "no-unreachable-loop": "warn",
+            "no-useless-assignment": "warn",
+            "block-scoped-var": "error",
+            "class-methods-use-this": "warn",
+            "default-case": "error",
+            "default-case-last": "warn",
+            "default-param-last": "error",
+            "dot-notation": "error",
+            "func-style": [ "error", "declaration" ],
+            "no-case-declarations": "error",
+            "no-else-return": "warn",
+            "no-empty-function": "warn",
+            "no-eval": "error",
+            "camelcase": "off",
+            "one-var": "off",
+            "capitalized-comments": "off",
+            "no-param-reassign": "off",
+            "sort-keys": "off",
+            "no-ternary": "off",
+            "max-statements": "off",
+            "complexity": "off",
+            "max-lines-per-function": "off",
+            "no-plusplus": "off",
+            "no-continue": "off",
+            "id-length": "off",
+            "guard-for-in": "off",
+            "sort-imports": "off",
+            "no-warning-comments": "off",
+
+            "@typescript-eslint/no-magic-numbers": "off",
+            "@typescript-eslint/prefer-readonly-parameter-types": "off",
+            "@typescript-eslint/no-unsafe-type-assertion": "off",
             "@typescript-eslint/restrict-template-expressions": "off",
             "@typescript-eslint/consistent-indexed-object-style": "off",
             "@typescript-eslint/non-nullable-type-assertion-style": "warn",
             "@typescript-eslint/no-non-null-assertion": "off",
-
+            "@typescript-eslint/no-namespace": "off",
+            "@typescript-eslint/no-base-to-string": "error",
+            "@typescript-eslint/method-signature-style": "off",
+            "@typescript-eslint/member-ordering": "off",
+            "@typescript-eslint/guard-for-in": "off",
+            "@typescript-eslint/restrict-template-expressions": [
+                "error", {
+                    allowNumber: true,
+                    allowBoolean: true,
+                }
+            ],
             "@typescript-eslint/naming-convention": [
                 "warn",
                 {
@@ -63,17 +119,6 @@ export default [
                     ignoreRestSiblings: true
                 }
             ],
-            "semi": "error",
-            // "curly": "error",
-            "eqeqeq": "warn",
-            "no-throw-literal": "warn",
-            "no-implicit-coercion": "error",
-            "no-constructor-return": "error",
-            "no-duplicate-imports": "error",
-            "no-self-compare": "error",
-            "no-template-curly-in-string": "warn",
-            "no-unmodified-loop-condition": "warn",
-            "no-unreachable-loop": "warn",
             "@typescript-eslint/no-use-before-define": [
                 "warn",
                 {
@@ -81,24 +126,6 @@ export default [
                     classes: false,
                 }
             ],
-            "no-useless-assignment": "warn",
-            "block-scoped-var": "error",
-            "class-methods-use-this": "warn",
-            "default-case": "error",
-            "default-case-last": "warn",
-            "default-param-last": "error",
-            "dot-notation": "error",
-            "func-style": [ "error", "declaration" ],
-            "no-case-declarations": "error",
-            "no-else-return": "warn",
-            "no-empty-function": "warn",
-            "no-eval": "error",
-            "no-unreachable-loop": "off",
         },
     },
-    eslint.configs.recommended,
-    ...tseslint.configs.recommendedTypeChecked,
-    // BUG(stefano): enabling these overrides the ones defined above
-    // ...tseslint.configs.strictTypeChecked,
-    // ...tseslint.configs.stylisticTypeChecked,
 ];

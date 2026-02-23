@@ -1,11 +1,13 @@
 {
   "compileOnSave": false,
+  "exclude": ["saved_for_later"],
   "compilerOptions": {
     "target": "es2024",
     "module": "nodenext",
 
     "sourceMap": true,
-    "rootDirs": ["src"],
+    "rootDir": "src",
+
     // "diagnostics": true,
     // "extendedDiagnostics": true,
 
@@ -26,7 +28,8 @@
     "forceConsistentCasingInFileNames": true,
     "noEmitOnError": true,
 
-    // Note: might be interesting for performance/size
+    // Note: these might be interesting for performance/size
+    // "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
 
     "esModuleInterop": true,

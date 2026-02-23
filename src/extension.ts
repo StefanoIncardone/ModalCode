@@ -7,14 +7,14 @@
 // IDEA(stefano): provide a "reference" keybindings extension
 
 import {
-    Disposable,
-    ExtensionContext,
+    type Disposable,
+    type ExtensionContext,
+    type QuickPickItem,
+    type StatusBarItem,
     StatusBarAlignment,
-    StatusBarItem,
+    commands as vsc_commands,
     window as vsc_window,
     workspace as vsc_workspace,
-    commands as vsc_commands,
-    QuickPickItem,
 } from "vscode";
 
 declare global {
@@ -23,7 +23,8 @@ declare global {
     }
 }
 
-function has_keys(obj: object) {
+function has_keys(obj: object): boolean {
+    // eslint-disable-next-line no-unreachable-loop
     for (const _ in obj) return true;
     return false;
 }
@@ -49,19 +50,21 @@ interface Mode extends ModeConfig {
 const CAPTURING_MODE_DESCRIPTION = "Capturing";
 const NON_CAPTURING_MODE_DESCRIPTION = "Non Capturing";
 
-let modes: Map<string, Mode>;
-
 const MODE_CONTEXT_KEY = "modalcode.mode";
 const SELECT_COMMAND = "modalcode.select";
 const SELECT_COMMAND_TOOLTIP = "Select mode";
 const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
 
+// eslint-disable-next-line @typescript-eslint/init-declarations
+let modes: Map<string, Mode>;
+// eslint-disable-next-line @typescript-eslint/init-declarations
 let status_bar_item: StatusBarItem;
-let type_subscription: Disposable | undefined;
+// eslint-disable-next-line @typescript-eslint/init-declarations
+let type_subscription: Disposable | null;
 
 export function activate(context: ExtensionContext): void {
     const modalcode_modes = vsc_workspace.getConfiguration("modalcode").get("modes");
-    if (modalcode_modes === undefined) return;
+    if (typeof modalcode_modes === "undefined") return;
     if (modalcode_modes === null) {
         vsc_window.showErrorMessage("ModalCode: 'modalcode.modes' cannot be null");
         return;
@@ -72,7 +75,7 @@ export function activate(context: ExtensionContext): void {
     }
     if (modalcode_modes.length === 0) return;
 
-    // IDEA(stefano): report errors for all modes and then terminate activation
+    // TODO(stefano): report errors for all modes and then terminate activation
     for (let mode_index = 0; mode_index < modalcode_modes.length; ++mode_index) {
         const mode_config = modalcode_modes[mode_index];
 
@@ -87,7 +90,7 @@ export function activate(context: ExtensionContext): void {
 
         const { name, capturing, ...unexpected_properties } = mode_config as ModeConfigUnknown;
 
-        if (name === undefined) {
+        if (typeof name === "undefined") {
             vsc_window.showErrorMessage(`ModalCode: missing 'name' property [mode at index ${mode_index}]`);
             return;
         }
@@ -108,7 +111,7 @@ export function activate(context: ExtensionContext): void {
             return;
         }
 
-        if (capturing === undefined) {
+        if (typeof capturing === "undefined") {
             vsc_window.showErrorMessage(`ModalCode: missing 'capturing' property [mode '${name}' at index ${mode_index}]`);
             return;
         }
@@ -161,7 +164,8 @@ export function activate(context: ExtensionContext): void {
     }
     vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, starting_mode.name);
 
-    status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, 9999999999);
+    const ALIGN_LEFT = 9999999999;
+    status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, ALIGN_LEFT);
     status_bar_item.command = SELECT_COMMAND;
     status_bar_item.tooltip = SELECT_COMMAND_TOOLTIP;
     status_bar_item.text = starting_mode.text;
@@ -173,6 +177,7 @@ export function activate(context: ExtensionContext): void {
 
 export function deactivate(): void {
     mode_set_non_capturing();
+    // eslint-disable-next-line no-undefined
     vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, undefined);
 }
 
@@ -184,27 +189,27 @@ function mode_from_config(config: ModeConfig): asserts config is Mode {
     (config as typeof config & { text: string }).text = `-- ${config.name} --`;
 }
 
-function mode_set_capturing(self: Mode): void {
-    if (type_subscription !== undefined) return;
+function mode_set_capturing(mode: Mode): void {
+    if (type_subscription !== null) return;
     try {
         type_subscription = vsc_commands.registerCommand("type", ignore_type_commands);
     } catch {
-        vsc_window.showErrorMessage(`ModalCode: cannot enter '${self.name}' because the 'type' command is already registered`);
+        vsc_window.showErrorMessage(`ModalCode: cannot enter mode '${mode.name}' because typing events are already being captured`);
     }
 }
 
 function mode_set_non_capturing(): void {
-    if (type_subscription === undefined) return;
+    if (type_subscription === null) return;
     type_subscription.dispose();
-    type_subscription = undefined;
+    type_subscription = null;
 }
 
 async function select_mode(name: unknown): Promise<void> {
-    if (name === undefined) {
+    if (typeof name === "undefined") {
         // Note: rebuilding the quick pick items each time since this command is not expected to be
         // used often
         const quick_pick_items: QuickPickItem[] = [];
-        for (const [_, mode] of modes) {
+        for (const [_mode_name, mode] of modes) {
             const description = mode.capturing ? CAPTURING_MODE_DESCRIPTION : NON_CAPTURING_MODE_DESCRIPTION;
             const quick_pick_item: QuickPickItem = { label: mode.name, description };
             quick_pick_items.push(quick_pick_item);
@@ -215,7 +220,7 @@ async function select_mode(name: unknown): Promise<void> {
             title: SELECT_COMMAND_TOOLTIP,
             placeHolder: SELECT_COMMAND_PLACEHOLDER,
         });
-        if (name === undefined) return;
+        if (typeof name === "undefined") return;
     }
     else if (typeof name !== "string") {
         vsc_window.showErrorMessage(`ModalCode: mode name must be a 'string' but got '${typeof name}'`);
@@ -223,7 +228,7 @@ async function select_mode(name: unknown): Promise<void> {
     }
 
     const mode = modes.get(name as string);
-    if (mode === undefined) {
+    if (typeof mode === "undefined") {
         vsc_window.showErrorMessage(`ModalCode: mode '${name as string}' not found`);
         return;
     }
