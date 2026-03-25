@@ -61,9 +61,9 @@
 
  "main": "./out/dev/extension.js",
  "scripts": {
-   "check": "tsc -p ./ --noEmit",
-   "compile": "tsc -p ./ --outDir ./out",
-   "compile-dev": "tsc -p ./ --outDir ./out/dev",
+   "tsc": "tsc",
+   "check": "tsc -p ./ --noEmit --strict",
+   "compile": "tsc -p ./ --outDir ./out/dev --strict",
    "lint": "eslint"
  },
  "engineStrict": true,
