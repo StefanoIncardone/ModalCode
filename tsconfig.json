@@ -1,6 +1,6 @@
 {
   "compileOnSave": false,
-  "exclude": ["saved_for_later"],
+  "exclude": ["saved_for_later", "eslint.config.mts"],
   "compilerOptions": {
     "target": "es2024",
     "module": "nodenext",

@@ -7,14 +7,16 @@
 // IDEA(stefano): provide a "reference" keybindings extension
 
 import {
-    type Disposable,
-    type ExtensionContext,
-    type QuickPickItem,
-    type StatusBarItem,
     StatusBarAlignment,
     commands as vsc_commands,
     window as vsc_window,
     workspace as vsc_workspace,
+} from "vscode";
+import type {
+    Disposable,
+    ExtensionContext,
+    QuickPickItem,
+    StatusBarItem,
 } from "vscode";
 
 declare global {
@@ -32,10 +34,9 @@ function has_keys(obj: object): boolean {
 const MIN_NAME_LENGTH = 1;
 const MAX_NAME_LENGTH = 16;
 
-interface ModeConfigUnknown {
+interface ModeConfigUnknown extends Readonly<Record<string, unknown>> {
     readonly name?: unknown;
     readonly capturing?: unknown;
-    readonly [key: string]: unknown;
 }
 
 interface ModeConfig {
