@@ -59,13 +59,17 @@
   ]
  },
 
- "main": "./out/dev/extension.js",
+ "main": "./out/extension.js",
  "scripts": {
    "tsc": "tsc",
-   "compile-project": "tsc -p ./ --strict",
-   "check": "npm run compile-project -- --noEmit",
-   "compile": "npm run compile-project -- --outDir ./out/dev",
-   "lint": "eslint ."
+   "tsc-compile": "tsc --strict -p ./",
+
+   "compile": "npm run tsc-compile -- --outDir ./out",
+   "compile-dev": "npm run tsc-compile -- --outDir ./out/dev",
+
+   "check": "npm run tsc-compile -- --noEmit",
+   "lint": "eslint .",
+   "check-lint": "npm run check && npm run lint"
  },
  "engineStrict": true,
  "engines": {

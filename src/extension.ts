@@ -48,27 +48,30 @@ interface Mode extends ModeConfig {
     readonly text: string;
 }
 
+function mode_at_index(mode_index: number): string {
+    return `[mode at index ${mode_index}]`;
+}
+
+function mode_name_at_index(mode_index: number, mode_name: string): string {
+    return `[mode ${mode_name} at index ${mode_index}]`;
+}
+
 const CAPTURING_MODE_DESCRIPTION = "Capturing";
 const NON_CAPTURING_MODE_DESCRIPTION = "Non Capturing";
 
-const TYPE_COMMAND = "type";
-const SET_CONTEXT_COMMAND = "setContext";
 const MODE_CONTEXT_KEY = "modalcode.mode";
 
 const SELECT_COMMAND = "modalcode.select";
 const SELECT_COMMAND_TOOLTIP = "Select mode";
 const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
 
-// eslint-disable-next-line @typescript-eslint/init-declarations
 let modes: Map<string, Mode> | undefined;
-// eslint-disable-next-line @typescript-eslint/init-declarations
 let status_bar_item: StatusBarItem | undefined;
-// eslint-disable-next-line @typescript-eslint/init-declarations
 let type_subscription: Disposable | undefined;
 
 export function activate(context: ExtensionContext): void {
     const modalcode_modes = vsc_workspace.getConfiguration("modalcode").get("modes");
-    if (typeof modalcode_modes === "undefined") return;
+    if (modalcode_modes === undefined) return;
     if (modalcode_modes === null) {
         vsc_window.showErrorMessage("'modalcode.modes' cannot be null");
         return;
@@ -84,48 +87,48 @@ export function activate(context: ExtensionContext): void {
         const mode_config = modalcode_modes[mode_index];
 
         if (mode_config === null) {
-            vsc_window.showErrorMessage(`mode cannot be null [mode at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`mode cannot be null ${mode_at_index(mode_index)}`);
             return;
         }
         if (typeof mode_config !== "object") {
-            vsc_window.showErrorMessage(`mode must be an object but got '${typeof mode_config}' [mode at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`mode must be an object but got '${typeof mode_config}' ${mode_at_index(mode_index)}`);
             return;
         }
 
         const { name, capturing, ...unexpected_properties } = mode_config as ModeConfigUnknown;
 
-        if (typeof name === "undefined") {
-            vsc_window.showErrorMessage(`missing 'name' property [mode at index ${mode_index}]`);
+        if (name === undefined) {
+            vsc_window.showErrorMessage(`missing 'name' property ${mode_at_index(mode_index)}`);
             return;
         }
         if (name === null) {
-            vsc_window.showErrorMessage(`'name' cannot be null [mode at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`'name' cannot be null ${mode_at_index(mode_index)}`);
             return;
         }
         if (typeof name !== "string") {
-            vsc_window.showErrorMessage(`'name' must be a string but got '${typeof name}' [mode at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`'name' must be a string but got '${typeof name}' ${mode_at_index(mode_index)}`);
             return;
         }
         if (name.length < MIN_NAME_LENGTH) {
-            vsc_window.showErrorMessage(`'name' cannot be shorter than ${MIN_NAME_LENGTH} characters [mode '${name}' at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`'name' cannot be shorter than ${MIN_NAME_LENGTH} characters ${mode_name_at_index(mode_index, name)}`);
             return;
         }
         if (name.length > MAX_NAME_LENGTH) {
             const trimmed_name = name.slice(0, MAX_NAME_LENGTH).concat("...");
-            vsc_window.showErrorMessage(`'name' cannot be longer than ${MAX_NAME_LENGTH} characters [mode '${trimmed_name}' at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`'name' cannot be longer than ${MAX_NAME_LENGTH} characters ${mode_name_at_index(mode_index, trimmed_name)}`);
             return;
         }
 
-        if (typeof capturing === "undefined") {
-            vsc_window.showErrorMessage(`missing 'capturing' property [mode '${name}' at index ${mode_index}]`);
+        if (capturing === undefined) {
+            vsc_window.showErrorMessage(`missing 'capturing' property ${mode_name_at_index(mode_index, name)}`);
             return;
         }
         if (capturing === null) {
-            vsc_window.showErrorMessage(`'capturing' cannot be null [mode '${name}' at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`'capturing' cannot be null ${mode_name_at_index(mode_index, name)}`);
             return;
         }
         if (typeof capturing !== "boolean") {
-            vsc_window.showErrorMessage(`'capturing' must be a boolean but got '${typeof capturing}' [mode '${name}' at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`'capturing' must be a boolean but got '${typeof capturing}' ${mode_name_at_index(mode_index, name)}`);
             return;
         }
 
@@ -138,7 +141,7 @@ export function activate(context: ExtensionContext): void {
                 unexpected_properties_string += `, '${property}'`;
             }
 
-            vsc_window.showWarningMessage(`unexpected ${unexpected_properties_string} properties [mode '${name}' at index ${mode_index}]`);
+            vsc_window.showWarningMessage(`unexpected ${unexpected_properties_string} properties ${mode_name_at_index(mode_index, name)}`);
             return;
         }
 
@@ -147,7 +150,7 @@ export function activate(context: ExtensionContext): void {
             const mode = modalcode_modes[defined_mode_index] as ModeConfig;
             if (mode.name !== name) continue;
 
-            vsc_window.showErrorMessage(`previously defined at index ${defined_mode_index} [mode '${name}' at index ${mode_index}]`);
+            vsc_window.showErrorMessage(`previously defined at index ${defined_mode_index} ${mode_name_at_index(mode_index, name)}`);
             return;
         }
     }
@@ -161,14 +164,14 @@ export function activate(context: ExtensionContext): void {
     for (let mode_index = 1; mode_index < modalcode_modes.length; ++mode_index) {
         const mode = modalcode_modes[mode_index] as ModeConfig;
         mode_from_config(mode);
-        modes.set(mode.name,  mode);
+        modes.set(mode.name, mode);
     }
 
     // Note: ignoring non-capturing modes since type_subscription has not yet been set
     if (starting_mode.capturing) {
         mode_set_capturing(starting_mode);
     }
-    vsc_commands.executeCommand(SET_CONTEXT_COMMAND, MODE_CONTEXT_KEY, starting_mode.name);
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, starting_mode.name);
 
     const ALIGN_LEFT = 9999999999;
     status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, ALIGN_LEFT);
@@ -183,7 +186,7 @@ export function activate(context: ExtensionContext): void {
 
 export function deactivate(): void {
     mode_set_non_capturing();
-    vsc_commands.executeCommand(SET_CONTEXT_COMMAND, MODE_CONTEXT_KEY, null);
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, null);
 }
 
 function ignore_type_commands(): void {
@@ -195,23 +198,22 @@ function mode_from_config(config: ModeConfig): asserts config is Mode {
 }
 
 function mode_set_capturing(mode: Mode): void {
-    if (typeof type_subscription !== "undefined") return;
+    if (type_subscription !== undefined) return;
     try {
-        type_subscription = vsc_commands.registerCommand(TYPE_COMMAND, ignore_type_commands);
+        type_subscription = vsc_commands.registerCommand("type", ignore_type_commands);
     } catch {
         vsc_window.showErrorMessage(`cannot enter mode '${mode.name}' because typing events are already being captured`);
     }
 }
 
 function mode_set_non_capturing(): void {
-    if (typeof type_subscription === "undefined") return;
+    if (type_subscription === undefined) return;
     type_subscription.dispose();
-    // eslint-disable-next-line no-undefined
     type_subscription = undefined;
 }
 
 async function select_mode(name: unknown): Promise<void> {
-    if (typeof name === "undefined") {
+    if (name === undefined) {
         // Note: rebuilding the quick pick items each time since this command is not expected to be
         // used often
         const quick_pick_items: QuickPickItem[] = [];
@@ -226,7 +228,7 @@ async function select_mode(name: unknown): Promise<void> {
             title: SELECT_COMMAND_TOOLTIP,
             placeHolder: SELECT_COMMAND_PLACEHOLDER,
         });
-        if (typeof name === "undefined") return;
+        if (name === undefined) return;
     }
     else if (typeof name !== "string") {
         vsc_window.showErrorMessage(`mode name must be a 'string' but got '${typeof name}'`);
@@ -234,7 +236,7 @@ async function select_mode(name: unknown): Promise<void> {
     }
 
     const mode = modes!.get(name as string);
-    if (typeof mode === "undefined") {
+    if (mode === undefined) {
         vsc_window.showErrorMessage(`mode '${name as string}' not found`);
         return;
     }
@@ -246,6 +248,6 @@ async function select_mode(name: unknown): Promise<void> {
         mode_set_non_capturing();
     }
 
-    vsc_commands.executeCommand(SET_CONTEXT_COMMAND, MODE_CONTEXT_KEY, mode.name);
+    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode.name);
     status_bar_item!.text = mode.text;
 }

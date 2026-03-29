@@ -68,6 +68,11 @@ const config: Config = [
             "sort-imports": "off",
             "no-warning-comments": "off",
 
+            "@typescript-eslint/init-declarations": "off",
+            "no-undefined": "off",
+            "no-global-assign": "error",
+            "no-shadow-restricted-names": "error",
+
             "@typescript-eslint/no-magic-numbers": "off",
             "@typescript-eslint/prefer-readonly-parameter-types": "off",
             "@typescript-eslint/no-unsafe-type-assertion": "off",
