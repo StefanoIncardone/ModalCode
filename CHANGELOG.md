@@ -8,10 +8,14 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 ## Known issues
 
-- Status bar item color customization
 - Status bar item text padding to avoid shifting icons to the right
+- Modalcode settings validation reports duplicate modes based on wether two modes have the same
+    `name` property, ignoring any other property's value, while Vscode settings/`package.json`
+    validation reports warnings if all properties have the same value
 
 ## Unreleased
+
+- Add command to reload the settings
 
 ## 0.1.3 -
 
@@ -24,11 +28,13 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 - Merged `modalcode.enter_mode` with `modalcode.select_mode`, they are now `modalcode.select`
 - Allow definition of zero non-capturing modes
 - Not defining `modalcode.modes` or defining no modes no longer triggers information messages
+- All errors get now reported before aborting activation, instead of terminating at the first one
 
 ### Fixed
 
 - Information and error messages now better report their source location
 - Corrected error message
+- Extra mode properties are no longer considered errors
 
 ## 0.1.2 - 2026/01/05
 

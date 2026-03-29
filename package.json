@@ -1,93 +1,93 @@
 {
- "name": "modalcode",
- "displayName": "ModalCode",
- "version": "0.1.3-dev",
- "author": {
-  "name": "Stefano Incardone",
-  "email": "stefanoincardone@gmail.com"
- },
- "description": "Adding user-defined modes to VsCode",
- "license": "MIT",
- "repository": {
-  "type": "git",
-  "url": "https://github.com/StefanoIncardone/ModalCode"
- },
+  "name": "modalcode",
+  "displayName": "ModalCode",
+  "version": "0.1.3-dev",
+  "author": {
+    "name": "Stefano Incardone",
+    "email": "stefanoincardone@gmail.com"
+  },
+  "description": "Adding user-defined modes to VsCode",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StefanoIncardone/ModalCode"
+  },
 
- "categories": ["Keymaps", "Other"],
- "keywords": ["modes"],
- "activationEvents": ["*"],
- "contributes": {
-  "configuration": [
-   {
-    "title": "Modes",
-    "properties": {
-     "modalcode.modes": {
-      "type": "array",
-      "description": "List of modes to define",
+  "categories": ["Keymaps", "Other"],
+  "keywords": ["modes"],
+  "activationEvents": ["*"],
+  "contributes": {
+    "configuration": [
+      {
+        "title": "Modes",
+        "properties": {
+          "modalcode.modes": {
+            "type": "array",
+            "description": "List of modes to define",
 
-      "uniqueItems": true,
-      "items": {
-       "type": "object",
-       "description": "Mode properties",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "description": "Mode properties",
 
-       "required": ["name", "capturing"],
-       "additionalProperties": false,
-       "properties": {
-        "name": {
-         "type": "string",
-         "description": "The name of the mode",
-         "minLength": 1,
-         "maxLength": 16
-        },
-        "capturing": {
-         "type": "boolean",
-         "description": "Whether the mode should capture typing events",
-         "default": false
+              "required": ["name", "capturing"],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The name of the mode",
+                  "minLength": 1,
+                  "maxLength": 16
+                },
+                "capturing": {
+                  "type": "boolean",
+                  "description": "Whether the mode should capture typing events",
+                  "default": false
+                }
+              }
+            }
+          }
         }
-       }
       }
-     }
-    }
-   }
-  ],
-  "commands": [
-   {
-    "category": "ModalCode",
-    "title": "Select mode",
-    "command": "modalcode.select"
-   }
-  ]
- },
+    ],
+    "commands": [
+      {
+        "category": "ModalCode",
+        "title": "Select mode",
+        "command": "modalcode.select"
+      }
+    ]
+  },
 
- "main": "./out/extension.js",
- "scripts": {
-   "tsc": "tsc",
-   "tsc-compile": "tsc --strict -p ./",
+  "main": "./out/dev/extension.js",
+  "scripts": {
+    "tsc": "tsc",
+    "tsc-compile": "tsc --strict -p ./",
 
-   "compile": "npm run tsc-compile -- --outDir ./out",
-   "compile-dev": "npm run tsc-compile -- --outDir ./out/dev",
+    "compile": "npm run tsc-compile -- --outDir ./out",
+    "compile-dev": "npm run tsc-compile -- --outDir ./out/dev",
 
-   "check": "npm run tsc-compile -- --noEmit",
-   "lint": "eslint .",
-   "check-lint": "npm run check && npm run lint"
- },
- "engineStrict": true,
- "engines": {
-   "vscode": "^1.113.0"
- },
+    "check": "npm run tsc-compile -- --noEmit",
+    "lint": "eslint .",
+    "check-lint": "npm run check && npm run lint"
+  },
 
- "peerDependencies": {
-  "jiti": "2.6.1"
- },
- "devDependencies": {
-  "@types/vscode": "1.110.0",
-  "typescript": "5.9.3",
+  "engineStrict": true,
+  "engines": {
+    "vscode": "^1.113.0"
+  },
+  "peerDependencies": {
+    "jiti": "2.6.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "1.110.0",
+    "typescript": "5.9.3",
 
-  "eslint": "10.1.0",
-  "@eslint/js": "10.0.1",
-  "typescript-eslint": "8.57.2",
-  "@typescript-eslint/eslint-plugin": "8.57.2",
-  "@typescript-eslint/parser": "8.57.2",
-  "globals": "17.4.0"
- }
+    "eslint": "10.1.0",
+    "@eslint/js": "10.0.1",
+    "typescript-eslint": "8.57.2",
+    "@typescript-eslint/eslint-plugin": "8.57.2",
+    "@typescript-eslint/parser": "8.57.2",
+    "globals": "17.4.0"
+  }
 }

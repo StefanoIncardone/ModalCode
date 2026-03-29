@@ -5,6 +5,7 @@
 // IDEA(stefano): implement toggling of quote kinds, to remove the "Toggle Quotes"
 // IDEA(stefano): implement command to generate a keybindings reset file
 // IDEA(stefano): provide a "reference" keybindings extension
+// TODO(stefano): provide a command to reload the settings
 
 import {
     StatusBarAlignment,
@@ -82,78 +83,81 @@ export function activate(context: ExtensionContext): void {
     }
     if (modalcode_modes.length === 0) return;
 
-    // TODO(stefano): report errors for all modes and then terminate activation
-    for (let mode_index = 0; mode_index < modalcode_modes.length; ++mode_index) {
+    let valid_modes_count = 0;
+
+    validate_mode: for (let mode_index = 0; mode_index < modalcode_modes.length; ++mode_index) {
         const mode_config = modalcode_modes[mode_index];
 
         if (mode_config === null) {
             vsc_window.showErrorMessage(`mode cannot be null ${mode_at_index(mode_index)}`);
-            return;
+            continue;
         }
         if (typeof mode_config !== "object") {
             vsc_window.showErrorMessage(`mode must be an object but got '${typeof mode_config}' ${mode_at_index(mode_index)}`);
-            return;
+            continue;
         }
 
         const { name, capturing, ...unexpected_properties } = mode_config as ModeConfigUnknown;
 
         if (name === undefined) {
             vsc_window.showErrorMessage(`missing 'name' property ${mode_at_index(mode_index)}`);
-            return;
+            continue;
         }
         if (name === null) {
             vsc_window.showErrorMessage(`'name' cannot be null ${mode_at_index(mode_index)}`);
-            return;
+            continue;
         }
         if (typeof name !== "string") {
             vsc_window.showErrorMessage(`'name' must be a string but got '${typeof name}' ${mode_at_index(mode_index)}`);
-            return;
+            continue;
         }
         if (name.length < MIN_NAME_LENGTH) {
             vsc_window.showErrorMessage(`'name' cannot be shorter than ${MIN_NAME_LENGTH} characters ${mode_name_at_index(mode_index, name)}`);
-            return;
+            continue;
         }
         if (name.length > MAX_NAME_LENGTH) {
             const trimmed_name = name.slice(0, MAX_NAME_LENGTH).concat("...");
             vsc_window.showErrorMessage(`'name' cannot be longer than ${MAX_NAME_LENGTH} characters ${mode_name_at_index(mode_index, trimmed_name)}`);
-            return;
+            continue;
         }
 
         if (capturing === undefined) {
             vsc_window.showErrorMessage(`missing 'capturing' property ${mode_name_at_index(mode_index, name)}`);
-            return;
+            continue;
         }
         if (capturing === null) {
             vsc_window.showErrorMessage(`'capturing' cannot be null ${mode_name_at_index(mode_index, name)}`);
-            return;
+            continue;
         }
         if (typeof capturing !== "boolean") {
             vsc_window.showErrorMessage(`'capturing' must be a boolean but got '${typeof capturing}' ${mode_name_at_index(mode_index, name)}`);
-            return;
-        }
-
-        if (has_keys(unexpected_properties)) {
-            const unexptected_properties_array = Object.keys(unexpected_properties);
-            const first_unexpected_property = unexptected_properties_array[0]!;
-            let unexpected_properties_string = `'${first_unexpected_property}'`;
-            for (let i = 1; i < unexptected_properties_array.length; ++i) {
-                const property = unexptected_properties_array[i]!;
-                unexpected_properties_string += `, '${property}'`;
-            }
-
-            vsc_window.showWarningMessage(`unexpected ${unexpected_properties_string} properties ${mode_name_at_index(mode_index, name)}`);
-            return;
+            continue;
         }
 
         // IDEA(stefano): ignore mode instead of reporting an error
         for (let defined_mode_index = 0; defined_mode_index < mode_index; ++defined_mode_index) {
             const mode = modalcode_modes[defined_mode_index] as ModeConfig;
             if (mode.name !== name) continue;
+            // IDEA(stefano): report duplicate modes
 
             vsc_window.showErrorMessage(`previously defined at index ${defined_mode_index} ${mode_name_at_index(mode_index, name)}`);
-            return;
+            continue validate_mode;
         }
+
+        ++valid_modes_count;
+
+        if (!has_keys(unexpected_properties)) continue;
+
+        const [first_unexpected_property, ...other_unexptected_properties] = Object.keys(unexpected_properties);
+        let unexpected_properties_string = `'${first_unexpected_property}'`;
+        for (const unexpected_property of other_unexptected_properties) {
+            unexpected_properties_string += `, '${unexpected_property}'`;
+        }
+
+        vsc_window.showWarningMessage(`unexpected ${unexpected_properties_string} properties ${mode_name_at_index(mode_index, name)}`);
     }
+
+    if (valid_modes_count !== modalcode_modes.length) return;
 
     modes = new Map();
 
