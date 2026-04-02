@@ -16,6 +16,7 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 ## Unreleased
 
 - Add command to reload the settings
+- Add optional mode description to show in quick pick items
 
 ## 0.1.3 -
 

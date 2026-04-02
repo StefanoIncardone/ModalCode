@@ -67,6 +67,8 @@ const config: Config = [
             "guard-for-in": "off",
             "sort-imports": "off",
             "no-warning-comments": "off",
+            "no-inline-comments": "off",
+            "no-labels": "off",
 
             "@typescript-eslint/init-declarations": "off",
             "no-undefined": "off",
@@ -129,6 +131,8 @@ const config: Config = [
                     classes: false,
                 }
             ],
+
+            "@typescript-eslint/no-empty-function": "off", // already handled by no-empty-function
         },
     },
 ];
