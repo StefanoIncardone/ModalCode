@@ -75,6 +75,7 @@ const config: Config = [
             "no-global-assign": "error",
             "no-shadow-restricted-names": "error",
 
+            "@typescript-eslint/consistent-type-definitions": "off",
             "@typescript-eslint/no-magic-numbers": "off",
             "@typescript-eslint/prefer-readonly-parameter-types": "off",
             "@typescript-eslint/no-unsafe-type-assertion": "off",

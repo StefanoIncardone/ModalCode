@@ -16,13 +16,13 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 ## Unreleased
 
 - Add command to reload the settings
-- Add optional mode description to show in quick pick items
 
 ## 0.1.3 -
 
 ### Added
 
-- `modalcode.select_mode`'s quick's items now display wether the mode captures typing events
+- `modalcode.select`'s quick's items now display wether the mode captures typing events
+- Modes can now specify an optional description that will show in `modalcode.select` quick pick
 
 ### Changed
 

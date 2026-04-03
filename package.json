@@ -7,6 +7,7 @@
     "email": "stefanoincardone@gmail.com"
   },
   "description": "Adding user-defined modes to VsCode",
+  "homepage": "https://github.com/StefanoIncardone/ModalCode#README.md",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -43,6 +44,10 @@
                   "type": "boolean",
                   "description": "Whether the mode should capture typing events",
                   "default": false
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Mode description"
                 }
               }
             }
