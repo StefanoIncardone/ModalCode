@@ -259,7 +259,6 @@ async function select_mode(name?: Json): Promise<void> {
             const quick_pick_item: QuickPickItem = {
                 label: mode.name,
                 description: mode.capturing ? CAPTURING_MODE_DESCRIPTION : NON_CAPTURING_MODE_DESCRIPTION,
-                alwaysShow: true,
             };
             if (mode.description !== undefined) {
                 quick_pick_item.detail = mode.description;
