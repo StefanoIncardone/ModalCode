@@ -20,20 +20,21 @@ import type {
     StatusBarItem,
 } from "vscode";
 
+//# Utility definitions
+
 declare global {
     interface ArrayConstructor {
         isArray(a: unknown): a is unknown[];
     }
 }
 
-function has_keys(obj: object): boolean {
+function has_keys(obj: Record<any, unknown>): boolean {
     // eslint-disable-next-line no-unreachable-loop
     for (const _ in obj) return true;
     return false;
 }
 
-const MIN_NAME_LENGTH = 1;
-const MAX_NAME_LENGTH = 16;
+//# Validation definitions
 
 interface ModeConfigUnknown extends Readonly<Record<string, unknown>> {
     readonly name?: unknown;
@@ -44,6 +45,19 @@ interface ModeConfig {
     readonly name: string;
     readonly capturing: boolean;
 }
+
+const MIN_NAME_LENGTH = 1;
+const MAX_NAME_LENGTH = 16;
+
+function mode_at_index(mode_index: number): string {
+    return `[mode at index ${mode_index}]`;
+}
+
+function mode_name_at_index(mode_index: number, mode_name: string): string {
+    return `[mode '${mode_name}' at index ${mode_index}]`;
+}
+
+//# Modes definitions
 
 class Mode implements ModeConfig {
     public readonly name: string;
@@ -75,13 +89,9 @@ class Mode implements ModeConfig {
     }
 }
 
-function mode_at_index(mode_index: number): string {
-    return `[mode at index ${mode_index}]`;
-}
+type Modes = Map<string, Mode>;
 
-function mode_name_at_index(mode_index: number, mode_name: string): string {
-    return `[mode '${mode_name}' at index ${mode_index}]`;
-}
+//# Extension logic definitions
 
 const CAPTURING_MODE_DESCRIPTION = "Capturing";
 const NON_CAPTURING_MODE_DESCRIPTION = "Non Capturing";
@@ -92,9 +102,7 @@ const SELECT_COMMAND = "modalcode.select";
 const SELECT_COMMAND_TOOLTIP = "Select mode";
 const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
 
-const ALIGN_LEFT = 9999999999;
-
-type Modes = Map<string, Mode>;
+const STATUS_BAR_ITEM_ALIGN_LEFT = 9999999999;
 
 let modes: Modes;
 let status_bar_item: StatusBarItem;
@@ -188,7 +196,7 @@ export function activate(context: ExtensionContext): void {
     const starting_mode = modes.values().next().value;
     if (starting_mode === undefined) return;
 
-    status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, ALIGN_LEFT);
+    status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, STATUS_BAR_ITEM_ALIGN_LEFT);
     starting_mode.set(status_bar_item);
 
     status_bar_item.command = SELECT_COMMAND;
@@ -230,13 +238,13 @@ async function select_mode(name: unknown): Promise<void> {
             });
         }
 
-        const item = await vsc_window.showQuickPick(quick_pick_items, {
+        const selected_item = await vsc_window.showQuickPick(quick_pick_items, {
             canPickMany: false,
             title: SELECT_COMMAND_TOOLTIP,
             placeHolder: SELECT_COMMAND_PLACEHOLDER,
         });
-        if (item === undefined) return;
-        name = item.label;
+        if (selected_item === undefined) return;
+        name = selected_item.label;
     }
     else if (typeof name !== "string") {
         vsc_window.showErrorMessage(`mode name must be a 'string' but got '${typeof name}'`);
