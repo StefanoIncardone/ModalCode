@@ -24,7 +24,7 @@
         "properties": {
           "modalcode.modes": {
             "type": "array",
-            "description": "List of modes to define",
+            "description": "List of editor modes",
 
             "uniqueItems": true,
             "items": {
