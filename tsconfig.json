@@ -5,11 +5,8 @@
     "target": "es2024",
     "module": "nodenext",
 
-    "sourceMap": true,
+    "sourceMap": false,
     "rootDir": "src",
-
-    // "diagnostics": true,
-    // "extendedDiagnostics": true,
 
     "strict": true,
     "alwaysStrict": true,
@@ -22,14 +19,12 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "experimentalDecorators": true,
-    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": false,
+    "experimentalDecorators": false,
     "noEmitOnError": true,
 
-    // Note: these might be interesting for performance/size
-    // "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
 
     "esModuleInterop": true,

@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+    {
+      "type": "npm",
+      "script": "check",
+      "detail": "npm run tsc -- --noEmit",
+      "problemMatcher": ["$tsc"],
+    },
+    {
+      "type": "npm",
+      "script": "check-dev",
+      "detail": "npm run tsc-dev -- --noEmit",
+      "problemMatcher": ["$tsc"],
+    },
+    {
+      "type": "npm",
+      "script": "lint",
+      "detail": "eslint .",
+      "problemMatcher": ["$eslint-stylish"],
+    },
+    {
+      "type": "npm",
+      "script": "check-lint",
+      "detail": "npm run check && npm run lint",
+      "problemMatcher": ["$tsc", "$eslint-stylish"],
+    },
+    {
+      "type": "npm",
+      "script": "check-dev-lint",
+      "detail": "npm run check-dev && npm run lint",
+      "problemMatcher": ["$tsc", "$eslint-stylish"],
+    },
+  ]
+}

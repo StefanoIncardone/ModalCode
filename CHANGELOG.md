@@ -30,6 +30,7 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 - Allow definition of zero non-capturing modes
 - Not defining `modalcode.modes` or defining no modes no longer triggers information messages
 - All errors get now reported before aborting activation, instead of terminating at the first one
+- Better config labals naming
 
 ### Fixed
 

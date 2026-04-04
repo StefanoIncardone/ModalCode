@@ -1,4 +1,3 @@
-// IDEA(stefano): provide option to sort quickpick items by definition order or by capturing/non-capturing
 // IDEA(stefano): implement multiple copy/paste buffers
 // IDEA(stefano): implement visual line mode commands
 // IDEA(stefano): implement cursor alignment, to remove the "Cursor Align" extension

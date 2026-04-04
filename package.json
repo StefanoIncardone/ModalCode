@@ -20,17 +20,18 @@
   "contributes": {
     "configuration": [
       {
-        "title": "Modes",
+        "title": "Editor Modes",
         "properties": {
           "modalcode.modes": {
-            "type": "array",
+            "title": "Modes",
             "description": "List of editor modes",
 
+            "type": "array",
             "uniqueItems": true,
             "items": {
-              "type": "object",
               "description": "Mode properties",
 
+              "type": "object",
               "required": ["name", "capturing"],
               "additionalProperties": false,
               "properties": {
@@ -64,17 +65,21 @@
     ]
   },
 
+  "type": "module",
   "main": "./out/dev/extension.js",
   "scripts": {
-    "tsc": "tsc",
-    "tsc-compile": "tsc --strict -p ./",
+    "raw-tsc": "tsc",
+    "tsc": "tsc -p ./tsconfig.json",
+    "tsc-dev": "tsc -p ./tsconfig.dev.json",
 
-    "compile": "npm run tsc-compile -- --outDir ./out",
-    "compile-dev": "npm run tsc-compile -- --outDir ./out/dev",
+    "compile": "npm run tsc -- --outDir ./out",
+    "compile-dev": "npm run tsc-dev -- --outDir ./out/dev",
 
-    "check": "npm run tsc-compile -- --noEmit",
     "lint": "eslint .",
-    "check-lint": "npm run check && npm run lint"
+    "check": "npm run tsc -- --noEmit",
+    "check-dev": "npm run tsc-dev -- --noEmit",
+    "check-lint": "npm run check && npm run lint",
+    "check-dev-lint": "npm run check-dev && npm run lint"
   },
 
   "engineStrict": true,
@@ -86,13 +91,13 @@
   },
   "devDependencies": {
     "@types/vscode": "1.110.0",
-    "typescript": "5.9.3",
+    "typescript": "6.0.2",
 
-    "eslint": "10.1.0",
+    "eslint": "10.2.0",
     "@eslint/js": "10.0.1",
-    "typescript-eslint": "8.57.2",
-    "@typescript-eslint/eslint-plugin": "8.57.2",
-    "@typescript-eslint/parser": "8.57.2",
+    "typescript-eslint": "8.58.0",
+    "@typescript-eslint/eslint-plugin": "8.58.0",
+    "@typescript-eslint/parser": "8.58.0",
     "globals": "17.4.0"
   }
 }
