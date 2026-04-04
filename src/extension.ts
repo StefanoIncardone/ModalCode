@@ -58,9 +58,13 @@ function has_keys(obj: Record<string | number | symbol, unknown>): boolean {
 const CAPTURING_MODE_DESCRIPTION = "Capturing";
 const NON_CAPTURING_MODE_DESCRIPTION = "Non Capturing";
 
-const MODE_CONTEXT_KEY = "modalcode.mode";
+const MODALCODE_KEY = "modalcode";
+const MODES_KEY = "modes";
+const MODE_KEY = "mode";
+const MODALCODE_MODES_KEY = `${MODALCODE_KEY}.${MODES_KEY}`;
+const MODE_CONTEXT_KEY = `${MODALCODE_KEY}.${MODE_KEY}`;
 
-const SELECT_COMMAND = "modalcode.select";
+const SELECT_COMMAND = `${MODALCODE_KEY}.select`;
 const SELECT_COMMAND_TOOLTIP = "Select mode";
 const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
 
@@ -105,14 +109,14 @@ class Mode implements ModeConfig {
 }
 
 export function activate(context: ExtensionContext): void {
-    const modalcode_modes: Json | undefined = vsc_workspace.getConfiguration("modalcode").get("modes");
+    const modalcode_modes: Json | undefined = vsc_workspace.getConfiguration(MODALCODE_KEY).get(MODES_KEY);
     if (modalcode_modes === undefined) return;
     if (modalcode_modes === null) {
-        vsc_window.showErrorMessage("'modalcode.modes' cannot be null");
+        vsc_window.showErrorMessage(`'${MODALCODE_MODES_KEY}' cannot be null`);
         return;
     }
     if (!json_is_array(modalcode_modes)) {
-        vsc_window.showErrorMessage(`'modalcode.modes' must be an array but got '${typeof modalcode_modes}'`);
+        vsc_window.showErrorMessage(`'${MODALCODE_MODES_KEY}' must be an array but got '${typeof modalcode_modes}'`);
         return;
     }
 
