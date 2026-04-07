@@ -51,14 +51,24 @@ const NAME_Q = `'${NAME}'`;
 const CAPTURING_Q = `'${CAPTURING}'`;
 const DESCRIPTION_Q = `'${DESCRIPTION}'`;
 
+type ModeConfigJson = JsonPrimitive | JsonArray | {
+    name?: Json;
+    capturing?: Json;
+    description?: Json;
+
+    [key: string]: Json;
+};
+
 interface ModeConfig {
-    readonly [NAME]: string;
-    readonly [CAPTURING]: boolean;
-    readonly [DESCRIPTION]: string | undefined;
+    readonly name: string;
+    readonly capturing: boolean;
+    readonly description: string | undefined;
 }
 
 const MIN_NAME_LENGTH = 1;
 const MAX_NAME_LENGTH = 16;
+
+const MIN_DESCRIPTION_LENGTH = 1;
 
 function json_is_array(json: Json): json is Json[] {
     return Array.isArray(json);
@@ -237,6 +247,9 @@ class Mode implements ModeConfig {
 
 export function activate(context: ExtensionContext): void {
     const modalcode_modes: Json | undefined = vsc_workspace.getConfiguration(MODALCODE).get(MODES);
+
+    //# Validating the config object
+
     if (modalcode_modes === undefined) return;
     if (modalcode_modes === null) {
         vsc_window.showErrorMessage(msg_cannot_be_null(MODES_SETTINGS_KEY_Q));
@@ -249,8 +262,11 @@ export function activate(context: ExtensionContext): void {
 
     modes = new Map<string, Mode>();
 
+    // BUG(stefano): errors in required properties should cause a fatal error and stop loading settings
     for (let mode_index = 0; mode_index < modalcode_modes.length; ++mode_index) {
-        const mode_config = modalcode_modes[mode_index] as Json;
+        const mode_config = modalcode_modes[mode_index] as ModeConfigJson;
+
+        //# Validating the mode config object
 
         if (mode_config === null) {
             vsc_window.showErrorMessage(msg_cannot_be_null(MODE, { mode_index }));
@@ -265,7 +281,11 @@ export function activate(context: ExtensionContext): void {
             continue;
         }
 
-        const mode_name = mode_config[NAME];
+        //# Validating required properties
+
+        const { name: mode_name } = mode_config;
+        delete mode_config.name;
+
         if (mode_name === undefined) {
             vsc_window.showErrorMessage(msg_missing_property(NAME_Q, { mode_index }));
             continue;
@@ -291,7 +311,9 @@ export function activate(context: ExtensionContext): void {
             continue;
         }
 
-        const capturing = mode_config[CAPTURING];
+        const { capturing } = mode_config;
+        delete mode_config.capturing;
+
         if (capturing === undefined) {
             vsc_window.showErrorMessage(msg_missing_property(CAPTURING_Q, { mode_index, mode_name }));
             continue;
@@ -309,33 +331,46 @@ export function activate(context: ExtensionContext): void {
             continue;
         }
 
-        let description = mode_config[DESCRIPTION];
-        if (description === undefined) {
-            // do nothing
-        }
-        else if (description === null) {
-            description = undefined;
-        }
-        else if (json_is_array(description)) {
-            vsc_window.showErrorMessage(msg_cannot_be_an_array(DESCRIPTION_Q, { mode_index, mode_name }));
-            continue;
-        }
-        else if (typeof description !== "string") {
-            vsc_window.showErrorMessage(msg_mismatched_type(DESCRIPTION_Q, "string", typeof mode_name as JsonTypeString, { mode_index, mode_name }));
-            continue;
+        //# Validating optional properties
+
+        let { description } = mode_config;
+        if (description !== undefined) {
+            delete mode_config.description;
+
+            if (description === null) {
+                description = undefined;
+            }
+            else if (json_is_array(description)) {
+                description = undefined;
+                vsc_window.showErrorMessage(msg_cannot_be_an_array(DESCRIPTION_Q, { mode_index, mode_name }));
+            }
+            else if (typeof description !== "string") {
+                description = undefined;
+                vsc_window.showErrorMessage(msg_mismatched_type(DESCRIPTION_Q, "string", typeof mode_name as JsonTypeString, { mode_index, mode_name }));
+            }
+            else if (description.length < MIN_NAME_LENGTH) {
+                description = undefined;
+                vsc_window.showErrorMessage(msg_min_length(DESCRIPTION_Q, MIN_DESCRIPTION_LENGTH, { mode_index, mode_name }));
+            }
         }
 
-        const { [NAME]: _name, [CAPTURING]: _capturing, [DESCRIPTION]: _description, ...unexpected_properties } = mode_config;
-        if (has_keys(unexpected_properties)) {
-            vsc_window.showWarningMessage(msg_unexpected_properties(unexpected_properties, { mode_index, mode_name }));
+        //# Reporting and ignoring extra properties
+
+        if (has_keys(mode_config)) {
+            vsc_window.showWarningMessage(msg_unexpected_properties(mode_config, { mode_index, mode_name }));
         }
 
-        for (let defined_mode_index = 0; defined_mode_index < mode_index; ++defined_mode_index) {
-            const defined_mode = modalcode_modes[defined_mode_index] as unknown as ModeConfig;
-            if (defined_mode.name !== mode_name) continue;
+        //# Reporting and ignoring duplicated modes
+
+        let defined_mode_index = 0;
+        for (const [defined_mode_name, _] of modes) {
+            if (defined_mode_name !== mode_name) {
+                ++defined_mode_index;
+                continue;
+            };
 
             vsc_window.showWarningMessage(msg_previously_defined(defined_mode_index, { mode_index, mode_name }));
-            continue;
+            break;
         }
 
         const mode = new Mode(mode_name, capturing, description);
