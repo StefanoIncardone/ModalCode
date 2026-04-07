@@ -48,7 +48,8 @@
                 },
                 "description": {
                   "type": "string",
-                  "description": "Mode description"
+                  "description": "Mode description",
+                  "minLength": 1
                 }
               }
             }
