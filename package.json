@@ -17,8 +17,31 @@
   "categories": ["Keymaps", "Other"],
   "keywords": ["modes"],
   "activationEvents": ["*"],
+
   "contributes": {
     "configuration": [
+      {
+        "title": "General",
+        "properties": {
+          "modalcode.settingsChangeAction": {
+            "title": "Settings change action",
+            "description": "Action to take when settings change",
+
+            "type": "string",
+            "default": "automatic reload",
+            "enum": [
+              "automatic reload",
+              "ask to reload",
+              "no action"
+            ],
+            "enumDescriptions": [
+              "Automatically reload without asking",
+              "Show a notification asking if modes should be reloaded",
+              "Do not reload nor ask for a reload"
+            ]
+          }
+        }
+      },
       {
         "title": "Editor Modes",
         "properties": {
@@ -57,11 +80,17 @@
         }
       }
     ],
+
     "commands": [
       {
         "category": "ModalCode",
         "title": "Select mode",
         "command": "modalcode.select"
+      },
+      {
+        "category": "ModalCode",
+        "title": "Reload modes",
+        "command": "modalcode.reload"
       }
     ]
   },

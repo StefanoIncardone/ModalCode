@@ -6,26 +6,48 @@ A simple extension to define custom editor modes inspired by
 
 ## Extension Settings
 
-- `Available modes`, `modalcode.modes`: array of user-defined modes objects as follows:
+### General
 
-    ```jsonc
-    // in settings.json
-    "modalcode.modes": [
-        // the first mode in order of definition will be selected as the starting mode
-        {
-            // minimum of 1 character, maximum of 16 characters
-            "name": "NORMAL", // creates a status bar item "-- NORMAL --"
+#### Config change action
 
-            // if the mode should capture typing events
-            "capturing": true
-        }
-    ]
-    ```
+`modalcode.settingsChangeAction`: action to take when settings change
+
+Possible values:
+
+- `automatic reload`: Automatically reload without asking
+- `ask to reload`: Show a notification asking if settings should be reloaded
+- `no action`: Do not reload nor ask for a reload
+
+### Editor Modes
+
+#### Modes
+
+`modalcode.modes`: array of user-defined modes objects
+
+Example:
+
+```jsonc
+// in settings.json
+"modalcode.modes": [
+    // the first mode in order of definition will be selected as the starting mode
+    {
+        // minimum of 1 character, maximum of 16 characters
+        "name": "NORMAL", // creates a status bar item "-- NORMAL --"
+
+        // if the mode should capture typing events
+        "capturing": true,
+
+        // optional mode description
+        "description": "Normal mode description"
+    }
+]
+```
 
 ## Extension Commands
 
-- `Select mode`: select mode through a quick-pick panel
-- `modalcode.select`:
+### Select mode
+
+- `Select mode`, `modalcode.select`: select mode through a quick-pick panel or a keybinding
 
     ```jsonc
     // in keybindings.json
@@ -37,8 +59,13 @@ A simple extension to define custom editor modes inspired by
     {
         "key": "escape",
         "command": "modalcode.select", // show quick-pick panel to select mode
+        // no args
     },
     ```
+
+### Reload modes
+
+- `Reload modes`, `modalcode.reload`: reload modes from the settings
 
 ## Definition of mode specific commands
 

@@ -65,6 +65,10 @@ const config: Config = [
             "no-warning-comments": "off",
             "no-inline-comments": "off",
             "no-labels": "off",
+            "no-lone-blocks": "off",
+            "@typescript-eslint/prefer-literal-enum-member": "off",
+            "@typescript-eslint/prefer-enum-initializers": "off",
+            "max-classes-per-file": "off",
 
             "@typescript-eslint/init-declarations": "off",
             "no-undefined": "off",
