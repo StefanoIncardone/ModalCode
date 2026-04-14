@@ -82,7 +82,6 @@ type ModeConfigJson = JsonPrimitive | JsonArray | {
 interface ModeConfig {
     readonly name: string;
     readonly capturing: boolean;
-    // IDEA(stefano): description could be anything and just call `toString()` on it
     readonly description: string | undefined;
 }
 
@@ -243,7 +242,6 @@ const SETTINGS_CHANGE_ACTION_LABELS: Record<string, SettingsChangeAction> = {
     "ask to reload": SettingsChangeAction_ASK_TO_RELOAD,
     "no action": SettingsChangeAction_NO_ACTION,
 } as const;
-
 
 type Modes = Map<string, Mode>;
 
@@ -457,7 +455,6 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
             continue;
         }
 
-        // BUG(stefano): errors in optional properties should
         //# Validating optional properties
 
         let { description } = mode_config;
@@ -476,7 +473,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
                 description = undefined;
                 vsc_window.showErrorMessage(msg_mismatched_type(DESCRIPTION_Q, "string", typeof mode_name as JsonTypeString, { mode_index, mode_name }));
             }
-            else if (description.length < MIN_NAME_LENGTH) {
+            else if (description.length < MIN_DESCRIPTION_LENGTH) {
                 description = undefined;
                 vsc_window.showErrorMessage(msg_min_length(DESCRIPTION_Q, MIN_DESCRIPTION_LENGTH, { mode_index, mode_name }));
             }
