@@ -18,6 +18,8 @@ import type {
     QuickPickItem,
     StatusBarItem,
 } from "vscode";
+import * as JsonUtils from "./json.js";
+import type { Json, JsonArray, JsonObject, JsonPrimitive, JsonType } from "./json.js";
 
 //# utility functions
 
@@ -39,29 +41,6 @@ function has_keys(obj: Record<string | number | symbol, unknown>): boolean {
 }
 
 //# Validation definitions
-
-// TODO(stefano): extract json utilities to separate module
-type JsonPrimitive = string | number | boolean | null;
-type JsonArray = Json[];
-type JsonObject = { [key: string]: Json; };
-type Json = JsonPrimitive | JsonArray | JsonObject;
-
-type JsonTypeString = "string" | "number" | "boolean" | "null" | "array" | "object";
-
-// eslint-disable-next-line @typescript-eslint/consistent-return
-function json_human_type_string(type_string: JsonTypeString): string {
-    switch (type_string) {
-    case "string":
-    case "number":
-    case "boolean":
-        return `a ${type_string}`;
-    case "null":
-        return type_string;
-    case "array":
-    case "object":
-        return `an ${type_string}`;
-    }
-}
 
 const NAME = "name";
 const CAPTURING = "capturing";
@@ -88,41 +67,67 @@ interface ModeConfig {
 const MIN_NAME_LENGTH = 1;
 const MAX_NAME_LENGTH = 16;
 
-const MIN_DESCRIPTION_LENGTH = 1;
-
-function json_is_array(json: Json): json is Json[] {
-    return Array.isArray(json);
-}
-
 //## Notifications messages
 
 interface ErrorLocation {
     mode_index: number;
+    mode_name?: string | undefined;
 }
 
-interface ErrorLocationWithName extends ErrorLocation {
-    mode_name?: string;
-}
-
-function message_location({ mode_index, mode_name }: ErrorLocationWithName): string {
-    if (mode_name === undefined) {
-        return `[mode at index ${mode_index}]`;
+function message_with_location(msg: string, location: ErrorLocation): string {
+    if (location.mode_name === undefined) {
+        return `${msg} [mode at index ${location.mode_index}]`;
     }
-    return `[mode '${mode_name}' at index ${mode_index}]`;
+    return `${msg} [mode '${location.mode_name}' at index ${location.mode_index}]`;
 }
 
-function message(msg: string, location?: ErrorLocationWithName): string {
+function message(msg: string, location?: ErrorLocation): string {
     if (location === undefined) {
         return msg;
     }
-    return `${msg} ${message_location(location)}`;
+    return message_with_location(msg, location);
+}
+
+interface PropertyError {
+    property_name: string;
+}
+
+interface MissingPropertyError extends PropertyError {
+}
+
+function msg_missing_property(
+    { property_name }: MissingPropertyError,
+    location?: ErrorLocation,
+): string {
+    const msg = `missing ${property_name} property`;
+    return message(msg, location);
+}
+
+function json_human_type_string(type_string: JsonType): string {
+    switch (type_string) {
+    case "string":
+    case "number":
+    case "boolean": {
+        return `a ${type_string}`;
+    };
+    case "null": {
+        return type_string;
+    };
+    case "array":
+    case "object": {
+        return `an ${type_string}`;
+    };
+    }
+}
+
+interface MismatchedTypeError extends PropertyError {
+    actual_type: JsonType;
+    expected_type: JsonType;
 }
 
 function msg_mismatched_type(
-    property_name: string,
-    actual_type: JsonTypeString,
-    expected_type: JsonTypeString,
-    location?: ErrorLocationWithName,
+    { property_name, actual_type, expected_type }: MismatchedTypeError,
+    location?: ErrorLocation,
 ): string {
     const actual_type_human_string = json_human_type_string(actual_type);
     const expected_type_human_string = json_human_type_string(expected_type);
@@ -130,64 +135,55 @@ function msg_mismatched_type(
     return message(msg, location);
 }
 
-function msg_missing_property(
-    property_name: string,
-    location?: ErrorLocationWithName,
-): string {
-    const msg = `missing ${property_name} property`;
-    return message(msg, location);
-}
-
-function msg_cannot_be_null(
-    property_name: string,
-    location?: ErrorLocationWithName,
-): string {
-    const msg = `${property_name} cannot be null`;
-    return message(msg, location);
-}
-
-function msg_cannot_be_an_array(
-    property_name: string,
-    location?: ErrorLocationWithName,
-): string {
-    const msg = `${property_name} cannot be an array`;
-    return message(msg, location);
+interface MinLengthError extends PropertyError {
+    min: number;
 }
 
 function msg_min_length(
-    property_name: string,
-    min: number,
-    location?: ErrorLocationWithName,
+    { property_name, min }: MinLengthError,
+    location?: ErrorLocation,
 ): string {
     const msg = `${property_name} cannot be shorter than ${min} characters`;
     return message(msg, location);
 }
 
+interface MaxLengthError extends PropertyError {
+    max: number;
+}
+
 function msg_max_length(
-    property_name: string,
-    max: number,
+    { property_name, max }: MaxLengthError,
     location?: ErrorLocation,
 ): string {
     const trimmed_name = property_name.slice(0, max).concat("...");
     const msg = `${property_name} cannot be longer than ${max} characters`;
     if (location === undefined) return msg;
-    return message(msg, { mode_name: trimmed_name, ...location });
+    return message_with_location(msg, { mode_name: trimmed_name, ...location });
+}
+
+interface UnexpectedPropertiesError {
+    properties: JsonObject;
 }
 
 function msg_unexpected_properties(
-    properties: JsonObject,
-    location?: ErrorLocationWithName,
+    { properties }: UnexpectedPropertiesError,
+    location?: ErrorLocation,
 ): string {
     const unexpected_properties_string = quote_and_join_items(Object.keys(properties));
     const msg = `unexpected ${unexpected_properties_string} properties`;
     return message(msg, location);
 }
 
+interface ModePreviouslyDefinedError {
+    defined_mode_name: string;
+    defined_mode_index: number;
+}
+
 function msg_previously_defined(
-    defined_mode_index: number,
-    location?: ErrorLocationWithName,
+    { defined_mode_name, defined_mode_index }: ModePreviouslyDefinedError,
+    location?: ErrorLocation,
 ): string {
-    const msg = `previously defined at index ${defined_mode_index}`;
+    const msg = `mode '${defined_mode_name}' previously defined at index ${defined_mode_index}`;
     return message(msg, location);
 }
 
@@ -209,7 +205,7 @@ const MODES_SETTINGS_KEY = `${MODALCODE}.${MODES}`;
 const MODES_SETTINGS_KEY_Q = `'${MODES_SETTINGS_KEY}'`;
 
 const SETTINGS_CHANGE_ACTION_SETTINGS_KEY = `${MODALCODE}.${SETTINGS_CHANGE_ACTION}`;
-const SETTINGS_CHANGE_ACTION_SETTINGS_KEY_Q = `'${SETTINGS_CHANGE_ACTION_SETTINGS_KEY}'`;
+// const SETTINGS_CHANGE_ACTION_SETTINGS_KEY_Q = `'${SETTINGS_CHANGE_ACTION_SETTINGS_KEY}'`;
 const MODE_CONTEXT_KEY = `${MODALCODE}.${MODE}`;
 
 // const MODE_CONTEXT_KEY_Q = `'${MODE_CONTEXT_KEY}'`;
@@ -226,10 +222,10 @@ const RELOAD_MODES_TEXT = "Reload modes";
 
 const STATUS_BAR_ITEM_ALIGN_LEFT = 9999999999;
 
-const SettingsChangeAction_AUTOMATIC_RELOAD = 0;
-const SettingsChangeAction_ASK_TO_RELOAD    = 1;
-const SettingsChangeAction_NO_ACTION        = 2;
-const SettingsChangeAction_DEFAULT = SettingsChangeAction_AUTOMATIC_RELOAD;
+const SettingsChangeAction_AUTOMATIC_RELOAD = 0; // eslint-disable-line @typescript-eslint/naming-convention
+const SettingsChangeAction_ASK_TO_RELOAD    = 1; // eslint-disable-line @typescript-eslint/naming-convention
+const SettingsChangeAction_NO_ACTION        = 2; // eslint-disable-line @typescript-eslint/naming-convention
+const SettingsChangeAction_DEFAULT = SettingsChangeAction_AUTOMATIC_RELOAD; // eslint-disable-line @typescript-eslint/naming-convention
 // const SettingsChangeAction_Count = SettingsChangeAction_NO_ACTION + 1;
 type SettingsChangeAction = (
     typeof SettingsChangeAction_AUTOMATIC_RELOAD |
@@ -325,14 +321,15 @@ async function select_mode(name?: Json): Promise<void> {
             placeHolder: SELECT_COMMAND_PLACEHOLDER,
         });
         if (selected_item === undefined) return;
+
         name = selected_item.label;
     }
-    else if (json_is_array(name)) {
-        vsc_window.showErrorMessage(msg_mismatched_type("mode name", "string", "array"));
-        return;
-    }
-    else if (typeof name !== "string") {
-        vsc_window.showErrorMessage(msg_mismatched_type("mode name", "string", typeof name as JsonTypeString));
+    else if (!JsonUtils.is_string(name)) {
+        vsc_window.showErrorMessage(msg_mismatched_type({
+            property_name: "mode name",
+            actual_type: JsonUtils.type_name(name),
+            expected_type: "string",
+        }));
         return;
     }
 
@@ -350,16 +347,12 @@ function parse_settings_change_action(action: Json | undefined): SettingsChangeA
     if (action === undefined) {
         return undefined;
     }
-    else if (action === null) {
-        vsc_window.showErrorMessage(msg_cannot_be_null(SETTINGS_CHANGE_ACTION_SETTINGS_KEY_Q));
-        return undefined;
-    }
-    else if (json_is_array(action)) {
-        vsc_window.showErrorMessage(msg_cannot_be_an_array(SETTINGS_CHANGE_ACTION_SETTINGS_KEY_Q));
-        return undefined;
-    }
-    else if (typeof action !== "string") {
-        vsc_window.showErrorMessage(msg_mismatched_type(MODE, "string", typeof action as JsonTypeString ));
+    else if (!JsonUtils.is_string(action)) {
+        vsc_window.showErrorMessage(msg_mismatched_type({
+            property_name: MODE,
+            actual_type: JsonUtils.type_name(action),
+            expected_type: "string",
+        }));
         return undefined;
     }
 
@@ -378,12 +371,12 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
     //# Validating the config object
 
     if (modalcode_modes === undefined) return new_modes;
-    if (modalcode_modes === null) {
-        vsc_window.showErrorMessage(msg_cannot_be_null(MODES_SETTINGS_KEY_Q));
-        return undefined;
-    }
-    if (!json_is_array(modalcode_modes)) {
-        vsc_window.showErrorMessage(msg_mismatched_type(MODES_SETTINGS_KEY_Q, "array", typeof modalcode_modes as JsonTypeString));
+    else if (!JsonUtils.is_array(modalcode_modes)) {
+        vsc_window.showErrorMessage(msg_mismatched_type({
+            property_name: MODES_SETTINGS_KEY_Q,
+            actual_type: JsonUtils.type_name(modalcode_modes),
+            expected_type: "array",
+        }));
         return undefined;
     }
 
@@ -392,16 +385,12 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
 
         //# Validating the mode config object
 
-        if (mode_config === null) {
-            vsc_window.showErrorMessage(msg_cannot_be_null(MODE, { mode_index }));
-            continue;
-        }
-        else if (json_is_array(mode_config)) {
-            vsc_window.showErrorMessage(msg_cannot_be_an_array(MODE, { mode_index }));
-            continue;
-        }
-        else if (typeof mode_config !== "object") {
-            vsc_window.showErrorMessage(msg_mismatched_type(MODE, "object", typeof mode_config as JsonTypeString, { mode_index }));
+        if (!JsonUtils.is_object(mode_config)) {
+            vsc_window.showErrorMessage(msg_mismatched_type({
+                property_name: MODE,
+                actual_type: JsonUtils.type_name(mode_config),
+                expected_type: "object",
+            }, { mode_index }));
             continue;
         }
 
@@ -411,27 +400,31 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
         delete mode_config.name;
 
         if (mode_name === undefined) {
-            vsc_window.showErrorMessage(msg_missing_property(NAME_Q, { mode_index }));
+            vsc_window.showErrorMessage(msg_missing_property({
+                property_name: NAME_Q,
+            }, { mode_index }));
             continue;
         }
-        else if (mode_name === null) {
-            vsc_window.showErrorMessage(msg_cannot_be_null(NAME_Q, { mode_index }));
-            continue;
-        }
-        else if (json_is_array(mode_name)) {
-            vsc_window.showErrorMessage(msg_cannot_be_an_array(NAME_Q, { mode_index }));
-            continue;
-        }
-        else if (typeof mode_name !== "string") {
-            vsc_window.showErrorMessage(msg_mismatched_type(NAME_Q, "string", typeof mode_name as JsonTypeString, { mode_index }));
+        else if (!JsonUtils.is_string(mode_name)) {
+            vsc_window.showErrorMessage(msg_mismatched_type({
+                property_name: NAME_Q,
+                actual_type: JsonUtils.type_name(mode_name),
+                expected_type: "string",
+            }, { mode_index }));
             continue;
         }
         else if (mode_name.length < MIN_NAME_LENGTH) {
-            vsc_window.showErrorMessage(msg_min_length(NAME_Q, MIN_NAME_LENGTH, { mode_index, mode_name }));
+            vsc_window.showErrorMessage(msg_min_length({
+                property_name: NAME_Q,
+                min: MIN_NAME_LENGTH,
+            }, { mode_index, mode_name }));
             continue;
         }
         else if (mode_name.length > MAX_NAME_LENGTH) {
-            vsc_window.showErrorMessage(msg_max_length(NAME_Q, MAX_NAME_LENGTH, { mode_index }));
+            vsc_window.showErrorMessage(msg_max_length({
+                property_name: NAME_Q,
+                max: MAX_NAME_LENGTH,
+            }, { mode_index }));
             continue;
         }
 
@@ -439,19 +432,17 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
         delete mode_config.capturing;
 
         if (capturing === undefined) {
-            vsc_window.showErrorMessage(msg_missing_property(CAPTURING_Q, { mode_index, mode_name }));
+            vsc_window.showErrorMessage(msg_missing_property({
+                property_name: CAPTURING_Q,
+            }, { mode_index, mode_name }));
             continue;
         }
-        else if (capturing === null) {
-            vsc_window.showErrorMessage(msg_cannot_be_null(CAPTURING_Q, { mode_index, mode_name }));
-            continue;
-        }
-        else if (json_is_array(capturing)) {
-            vsc_window.showErrorMessage(msg_cannot_be_an_array(CAPTURING_Q, { mode_index, mode_name }));
-            continue;
-        }
-        else if (typeof capturing !== "boolean") {
-            vsc_window.showErrorMessage(msg_mismatched_type(CAPTURING_Q, "boolean", typeof capturing as JsonTypeString, { mode_index, mode_name }));
+        else if (!JsonUtils.is_boolean(capturing)) {
+            vsc_window.showErrorMessage(msg_mismatched_type({
+                property_name: CAPTURING_Q,
+                actual_type: JsonUtils.type_name(capturing),
+                expected_type: "boolean",
+            }, { mode_index, mode_name }));
             continue;
         }
 
@@ -461,28 +452,26 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
         if (description !== undefined) {
             delete mode_config.description;
 
-            if (description === null) {
+            if (!JsonUtils.is_string(description)) {
+                vsc_window.showErrorMessage(msg_mismatched_type({
+                    property_name: DESCRIPTION_Q,
+                    actual_type: JsonUtils.type_name(description),
+                    expected_type: "string",
+                }, { mode_index, mode_name }));
                 description = undefined;
-                vsc_window.showErrorMessage(msg_cannot_be_null(DESCRIPTION_Q, { mode_index, mode_name }));
             }
-            else if (json_is_array(description)) {
+            else if (description.length === 0) {
+                // treating empty descriptions as no descriptions
                 description = undefined;
-                vsc_window.showErrorMessage(msg_cannot_be_an_array(DESCRIPTION_Q, { mode_index, mode_name }));
-            }
-            else if (typeof description !== "string") {
-                description = undefined;
-                vsc_window.showErrorMessage(msg_mismatched_type(DESCRIPTION_Q, "string", typeof mode_name as JsonTypeString, { mode_index, mode_name }));
-            }
-            else if (description.length < MIN_DESCRIPTION_LENGTH) {
-                description = undefined;
-                vsc_window.showErrorMessage(msg_min_length(DESCRIPTION_Q, MIN_DESCRIPTION_LENGTH, { mode_index, mode_name }));
             }
         }
 
         //# Reporting and ignoring extra properties
 
         if (has_keys(mode_config)) {
-            vsc_window.showWarningMessage(msg_unexpected_properties(mode_config, { mode_index, mode_name }));
+            vsc_window.showWarningMessage(msg_unexpected_properties({
+                properties: mode_config,
+            }, { mode_index, mode_name }));
         }
 
         //# Reporting and ignoring duplicated modes
@@ -494,7 +483,10 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
                 continue;
             };
 
-            vsc_window.showWarningMessage(msg_previously_defined(defined_mode_index, { mode_index, mode_name }));
+            vsc_window.showWarningMessage(msg_previously_defined({
+                defined_mode_name,
+                defined_mode_index,
+            }, { mode_index, mode_name }));
             break;
         }
 
