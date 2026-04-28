@@ -17,7 +17,7 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 - Per setting change action
 
-## 0.1.3 -
+## 0.1.3 - 2026/04/28
 
 ### Added
 
@@ -33,13 +33,13 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 - Allow definition of zero non-capturing modes
 - Not defining `modalcode.modes` or defining no modes no longer triggers information messages
 - All errors get now reported before aborting activation, instead of terminating at the first one
-- Better config labals naming
+- Better config labels naming
+- Extra mode properties are no longer considered errors
 
 ### Fixed
 
 - Information and error messages now better report their source location
 - Corrected error message
-- Extra mode properties are no longer considered errors
 
 ## 0.1.2 - 2026/01/05
 

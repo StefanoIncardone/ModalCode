@@ -1,7 +1,7 @@
 {
   "name": "modalcode",
   "displayName": "ModalCode",
-  "version": "0.1.3-dev",
+  "version": "0.1.3",
   "author": {
     "name": "Stefano Incardone",
     "email": "stefanoincardone@gmail.com"
@@ -96,7 +96,7 @@
   },
 
   "type": "module",
-  "main": "./out/dev/extension.js",
+  "main": "./out/extension.js",
   "scripts": {
     "raw-tsc": "tsc",
     "tsc": "tsc -p ./tsconfig.json",
