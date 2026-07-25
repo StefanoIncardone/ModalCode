@@ -96,38 +96,38 @@
   },
 
   "type": "module",
-  "main": "./out/extension.js",
+  "main": "./out/main/extension.js",
   "scripts": {
-    "raw-tsc": "tsc",
-    "tsc": "tsc -p ./tsconfig.json",
-    "tsc-dev": "tsc -p ./tsconfig.dev.json",
+    "tsc":      "tsc",
+    "tsc-main": "tsc -p ./tsconfig-main.json",
+    "tsc-dev":  "tsc -p ./tsconfig-dev.json",
 
-    "compile": "npm run tsc -- --outDir ./out",
-    "compile-dev": "npm run tsc-dev -- --outDir ./out/dev",
+    "compile-main":       "npm run tsc-main",
+    "compile-dev":        "npm run tsc-dev",
+    "compile-main-watch": "npm run compile-main -- -- --watch",
+    "compile-dev-watch":  "npm run compile-dev -- -- --watch",
 
-    "lint": "eslint .",
-    "check": "npm run tsc -- --noEmit",
-    "check-dev": "npm run tsc-dev -- --noEmit",
+    "check":      "npm run tsc-main -- --noEmit",
     "check-lint": "npm run check && npm run lint",
-    "check-dev-lint": "npm run check-dev && npm run lint"
+    "lint":       "eslint ."
   },
 
-  "engineStrict": true,
+  "engineStrict": false,
   "engines": {
-    "vscode": "^1.113.0"
+    "vscode": "^1.125.0"
   },
   "peerDependencies": {
-    "jiti": "2.6.1"
+    "jiti": "2.7.0"
   },
   "devDependencies": {
-    "@types/vscode": "1.110.0",
-    "typescript": "6.0.2",
+    "@types/vscode": "1.125.0",
+    "typescript": "6.0.3",
 
-    "eslint": "10.2.0",
+    "eslint": "10.8.0",
     "@eslint/js": "10.0.1",
-    "typescript-eslint": "8.58.0",
-    "@typescript-eslint/eslint-plugin": "8.58.0",
-    "@typescript-eslint/parser": "8.58.0",
-    "globals": "17.4.0"
+    "typescript-eslint": "8.65.0",
+    "@typescript-eslint/eslint-plugin": "8.65.0",
+    "@typescript-eslint/parser": "8.65.0",
+    "globals": "17.7.0"
   }
 }

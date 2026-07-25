@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "outDir": "./out/dev",
     "inlineSourceMap": true,
     // "diagnostics": true,
     // "extendedDiagnostics": true,

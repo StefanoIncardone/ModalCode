@@ -1,6 +1,26 @@
 {
   "compileOnSave": false,
-  "exclude": ["saved_for_later", "eslint.config.mts"],
+  "exclude": [
+    "**/node_modules",
+    "**/saved_for_later",
+    "**/eslint.config.mts",
+    "**/out",
+  ],
+  "watchOptions": {
+    "excludeDirectories": [
+      "**/node_modules",
+      "**/saved_for_later",
+      "**/eslint*.mts",
+      "**/tsconfig*.json",
+      "**/package*.json",
+      "**/.git",
+      "**/.gitignore",
+      "**/.vscode",
+      "**/LICENCE.txt",
+      "**/out",
+    ],
+  },
+
   "compilerOptions": {
     "target": "es2024",
     "module": "nodenext",
@@ -25,7 +45,8 @@
 
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "erasableSyntaxOnly": true,
+    "resolveJsonModule": true,
+    // "erasableSyntaxOnly": true,
 
     "esModuleInterop": true,
     "declaration": false,

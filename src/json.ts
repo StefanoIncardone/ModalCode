@@ -6,7 +6,7 @@ declare global {
     }
 }
 
-export type ArrayToUnion<T extends [unknown, ...unknown[]]> = (
+export type ArrayToUnion<T extends readonly unknown[] | unknown[]> = (
     T extends [infer First extends unknown] ? (
         First
     ) :
