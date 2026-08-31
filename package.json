@@ -114,20 +114,20 @@
 
   "engineStrict": false,
   "engines": {
-    "vscode": "^1.125.0"
+    "vscode": "^1.135.0"
   },
   "peerDependencies": {
     "jiti": "2.7.0"
   },
   "devDependencies": {
-    "@types/vscode": "1.125.0",
+    "@types/vscode": "1.134.0",
     "typescript": "6.0.3",
 
-    "eslint": "10.8.0",
+    "eslint": "10.9.1",
     "@eslint/js": "10.0.1",
-    "typescript-eslint": "8.65.0",
-    "@typescript-eslint/eslint-plugin": "8.65.0",
-    "@typescript-eslint/parser": "8.65.0",
-    "globals": "17.7.0"
+    "typescript-eslint": "8.68.0",
+    "@typescript-eslint/eslint-plugin": "8.68.0",
+    "@typescript-eslint/parser": "8.68.0",
+    "globals": "17.11.0"
   }
 }

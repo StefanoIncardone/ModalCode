@@ -1,6 +1,7 @@
 // IDEA(stefano): implement multiple copy/paste buffers
 // IDEA(stefano): implement visual line mode commands
 // IDEA(stefano): implement cursor alignment, to remove the "Cursor Align" extension
+// IDEA(stefano): implement todo-tree like features, to remove the "Better todo tree" extension
 // IDEA(stefano): implement toggling of quote kinds, to remove the "Toggle Quotes"
 // IDEA(stefano): implement command to generate a keybindings reset file
 // IDEA(stefano): provide a "reference" keybindings extension
@@ -50,14 +51,6 @@ const NAME_Q = `'${NAME}'`;
 const CAPTURING_Q = `'${CAPTURING}'`;
 const DESCRIPTION_Q = `'${DESCRIPTION}'`;
 
-type ModeConfigJson = JsonPrimitive | JsonArray | {
-    name?: Json;
-    capturing?: Json;
-    description?: Json;
-
-    [key: string]: Json;
-};
-
 interface ModeConfig {
     readonly name: string;
     readonly capturing: boolean;
@@ -66,6 +59,7 @@ interface ModeConfig {
 
 const MIN_NAME_LENGTH = 1;
 const MAX_NAME_LENGTH = 16;
+const MIN_DESCRIPTION_LENGTH = 1;
 
 //## Notifications messages
 
@@ -381,7 +375,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
     }
 
     for (let mode_index = 0; mode_index < modalcode_modes.length; ++mode_index) {
-        const mode_config = modalcode_modes[mode_index] as ModeConfigJson;
+        const mode_config = modalcode_modes[mode_index]!;
 
         //# Validating the mode config object
 
@@ -397,7 +391,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
         //# Validating required properties
 
         const { name: mode_name } = mode_config;
-        delete mode_config.name;
+        delete mode_config["name"];
 
         if (mode_name === undefined) {
             vsc_window.showErrorMessage(msg_missing_property({
@@ -429,7 +423,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
         }
 
         const { capturing } = mode_config;
-        delete mode_config.capturing;
+        delete mode_config["capturing"];
 
         if (capturing === undefined) {
             vsc_window.showErrorMessage(msg_missing_property({
@@ -450,7 +444,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
 
         let { description } = mode_config;
         if (description !== undefined) {
-            delete mode_config.description;
+            delete mode_config["description"];
 
             if (!JsonUtils.is_string(description)) {
                 vsc_window.showErrorMessage(msg_mismatched_type({
@@ -460,7 +454,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
                 }, { mode_index, mode_name }));
                 description = undefined;
             }
-            else if (description.length === 0) {
+            else if (description.length < MIN_DESCRIPTION_LENGTH) {
                 // treating empty descriptions as no descriptions
                 description = undefined;
             }
@@ -477,7 +471,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
         //# Reporting and ignoring duplicated modes
 
         let defined_mode_index = 0;
-        for (const [defined_mode_name, _] of new_modes) {
+        for (const defined_mode_name of new_modes.keys()) {
             if (defined_mode_name !== mode_name) {
                 ++defined_mode_index;
                 continue;
