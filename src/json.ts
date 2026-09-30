@@ -67,6 +67,8 @@ export type JsonTypeStringMap<J extends Json> = (
 )
 
 export function type_name<J extends Json>(json: J): JsonTypeStringMap<J> {
+    if (json === null) return "null" as JsonTypeStringMap<J>;
+    if (Array.isArray(json)) return "array" as JsonTypeStringMap<J>;
     return typeof json as JsonTypeStringMap<J>;
 }
 
@@ -97,11 +99,15 @@ export function is_array(json: Json): json is JsonArray {
 }
 
 export function is_object(json: Json): json is JsonObject {
-    return typeof json === "object";
+    if (is_null(json) || typeof json !== "object") return false;
+
+    const prototype = Object.getPrototypeOf(json);
+    return prototype === null || prototype === Object.prototype;
 }
 
 export function is_composite(json: Json): json is JsonComposite {
-    return is_array(json) || is_object(json);
+    // an array is also an 'object' so there is no need to check for that
+    return !is_null(json) && typeof json === "object";
 }
 
 //# Property lookup

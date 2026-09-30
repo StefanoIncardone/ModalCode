@@ -1,0 +1,12 @@
+src/
+node_modules
+saved_for_later
+.gitignore
+
+tsconfig.*.json
+eslint.config.*
+**/*.map
+**/*.ts
+
+# VsCode
+.vscode

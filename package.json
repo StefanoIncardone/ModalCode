@@ -104,8 +104,8 @@
 
     "compile-main":       "npm run tsc-main",
     "compile-dev":        "npm run tsc-dev",
-    "compile-main-watch": "npm run compile-main -- -- --watch",
-    "compile-dev-watch":  "npm run compile-dev -- -- --watch",
+    "compile-main-watch": "npm run tsc-main -- --watch",
+    "compile-dev-watch":  "npm run tsc-dev -- --watch",
 
     "check":      "npm run tsc-main -- --noEmit",
     "check-lint": "npm run check && npm run lint",
@@ -114,20 +114,21 @@
 
   "engineStrict": false,
   "engines": {
-    "vscode": "^1.135.0"
+    "vscode": "^1.138.x"
   },
   "peerDependencies": {
-    "jiti": "2.7.0"
+    "jiti": "^2.7.0"
   },
   "devDependencies": {
-    "@types/vscode": "1.134.0",
-    "typescript": "6.0.3",
+    "@types/node": "^26.6.3",
+    "@types/vscode": "^1.138.0",
+    "typescript": "^6.0.3",
 
-    "eslint": "10.9.1",
-    "@eslint/js": "10.0.1",
-    "typescript-eslint": "8.68.0",
-    "@typescript-eslint/eslint-plugin": "8.68.0",
-    "@typescript-eslint/parser": "8.68.0",
-    "globals": "17.11.0"
+    "eslint": "^10.11.0",
+    "@eslint/js": "^10.0.1",
+    "typescript-eslint": "^8.71.0",
+    "@typescript-eslint/eslint-plugin": "^8.71.0",
+    "@typescript-eslint/parser": "^8.71.0",
+    "globals": "^17.12.0"
   }
 }

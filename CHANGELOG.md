@@ -17,6 +17,12 @@ but may switch to [CalVer Versioning](https://calver.org/) in the future.
 
 - Per setting change action
 
+## 0.1.4 -
+
+### Fixed
+
+- Corrected parsing of `null` in places of expected objects
+
 ## 0.1.3 - 2026/04/28
 
 ### Added

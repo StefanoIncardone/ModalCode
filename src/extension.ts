@@ -1,11 +1,3 @@
-// IDEA(stefano): implement multiple copy/paste buffers
-// IDEA(stefano): implement visual line mode commands
-// IDEA(stefano): implement cursor alignment, to remove the "Cursor Align" extension
-// IDEA(stefano): implement todo-tree like features, to remove the "Better todo tree" extension
-// IDEA(stefano): implement toggling of quote kinds, to remove the "Toggle Quotes"
-// IDEA(stefano): implement command to generate a keybindings reset file
-// IDEA(stefano): provide a "reference" keybindings extension
-
 import {
     StatusBarAlignment,
     commands as vsc_commands,
@@ -20,17 +12,23 @@ import type {
     StatusBarItem,
 } from "vscode";
 import * as JsonUtils from "./json.js";
-import type { Json, JsonArray, JsonObject, JsonPrimitive, JsonType } from "./json.js";
+import type { Json, JsonObject, JsonType } from "./json.js";
 
 //# utility functions
 
-function quote_and_join_items(values: string[]): string {
+type Quote = "\"" | "'" | "`";
+type Separator = ",";
+
+const QUOTE = "'" satisfies Quote;
+const SEPARATOR = "," satisfies Separator;
+
+function quote_and_join_items(values: string[], quote: Quote = QUOTE, separator: Separator = SEPARATOR): string {
     const [first_value, ...other_values] = values;
     if (first_value === undefined) return "";
 
-    let quoted_values = `'${first_value}'`;
+    let quoted_values = `${quote}${first_value}${quote}`;
     for (const other_value of other_values) {
-        quoted_values += `, '${other_value}'`;
+        quoted_values += `${separator} ${quote}${other_value}${quote}`;
     }
     return quoted_values;
 }
@@ -42,14 +40,6 @@ function has_keys(obj: Record<string | number | symbol, unknown>): boolean {
 }
 
 //# Validation definitions
-
-const NAME = "name";
-const CAPTURING = "capturing";
-const DESCRIPTION = "description";
-
-const NAME_Q = `'${NAME}'`;
-const CAPTURING_Q = `'${CAPTURING}'`;
-const DESCRIPTION_Q = `'${DESCRIPTION}'`;
 
 interface ModeConfig {
     readonly name: string;
@@ -68,17 +58,13 @@ interface ErrorLocation {
     mode_name?: string | undefined;
 }
 
-function message_with_location(msg: string, location: ErrorLocation): string {
-    if (location.mode_name === undefined) {
-        return `${msg} [mode at index ${location.mode_index}]`;
-    }
-    return `${msg} [mode '${location.mode_name}' at index ${location.mode_index}]`;
+function message_with_location(msg: string, { mode_name, mode_index }: ErrorLocation): string {
+    if (mode_name === undefined) return `${msg} [mode at index ${mode_index}]`;
+                                 return `${msg} [mode '${mode_name}' at index ${mode_index}]`;
 }
 
 function message(msg: string, location?: ErrorLocation): string {
-    if (location === undefined) {
-        return msg;
-    }
+    if (location === undefined) return msg;
     return message_with_location(msg, location);
 }
 
@@ -114,6 +100,7 @@ function json_human_type_string(type_string: JsonType): string {
     }
 }
 
+// TODO(stefano): represent enums
 interface MismatchedTypeError extends PropertyError {
     actual_type: JsonType;
     expected_type: JsonType;
@@ -182,60 +169,115 @@ function msg_previously_defined(
 }
 
 //# Extension logic definitions
+const CAPTURING_DESCRIPTION = "Capturing";
+const NON_CAPTURING_DESCRIPTION = "Non Capturing";
 
-const CAPTURING_MODE_DESCRIPTION = "Capturing";
-const NON_CAPTURING_MODE_DESCRIPTION = "Non Capturing";
+namespace configuration {
+    export namespace modalcode {
+        export const BASE = "modalcode";
+        export const KEY = BASE;
 
-const MODALCODE = "modalcode";
-const MODES = "modes";
-const SETTINGS_CHANGE_ACTION = "settingsChangeAction";
-const MODE = "mode";
+        export namespace settingsChangeAction {
+            export const BASE = "settingsChangeAction";
+            export const KEY = `${modalcode.KEY}.${BASE}`;
 
-// const MODALCODE_Q = `'${MODALCODE}'`;
-// const MODES_Q = `'${MODES}'`;
-// const MODE_Q = `'${MODE}'`;
+            export namespace Properties {
+                export const ACTION = "action";
+            }
+        }
 
-const MODES_SETTINGS_KEY = `${MODALCODE}.${MODES}`;
-const MODES_SETTINGS_KEY_Q = `'${MODES_SETTINGS_KEY}'`;
+        export namespace modes {
+            export const BASE = "modes";
+            export const KEY = `${modalcode.KEY}.${BASE}`;
 
-const SETTINGS_CHANGE_ACTION_SETTINGS_KEY = `${MODALCODE}.${SETTINGS_CHANGE_ACTION}`;
-// const SETTINGS_CHANGE_ACTION_SETTINGS_KEY_Q = `'${SETTINGS_CHANGE_ACTION_SETTINGS_KEY}'`;
-const MODE_CONTEXT_KEY = `${MODALCODE}.${MODE}`;
+            export namespace definitions {
+                export const BASE = "definitions";
+                export const KEY = `${modes.KEY}.${BASE}`;
 
-// const MODE_CONTEXT_KEY_Q = `'${MODE_CONTEXT_KEY}'`;
+                export namespace Properties {
+                    export const MODE = "mode";
 
-const SELECT_COMMAND = `${MODALCODE}.select`;
-const SELECT_COMMAND_TOOLTIP = "Select mode";
-const SELECT_COMMAND_PLACEHOLDER = "Select mode to enter";
+                    export const NAME = "name";
+                    export const CAPTURING = "capturing";
+                    export const DESCRIPTION = "description";
+                }
+            }
 
-const RELOAD_COMMAND = `${MODALCODE}.reload`;
+            // export namespace locations {
+            //     export const BASE = "locations";
+            //     export const KEY = `${modes.KEY}.${BASE}`;
 
-const RELOAD_NOTIFICATION_TEXT = "Configuration changed";
-const FAILED_LOADING_TEXT = "Failed loading modes";
-const RELOAD_MODES_TEXT = "Reload modes";
+            //     export namespace Properties {
+            //         export const LOCATION = "location";
+            //     }
+            // }
+        }
+    }
+}
+
+namespace commands {
+    export namespace modalcode {
+        export const BASE = configuration.modalcode.BASE;
+        export const KEY = configuration.modalcode.KEY;
+
+        export namespace select {
+            export const BASE = "select";
+            export const KEY = `${modalcode.KEY}.${BASE}`;
+
+            export const TOOLTIP = "Select mode";
+            export const PLACEHOLDER = "Select mode to enter";
+        }
+
+        export namespace reload {
+            export const BASE = "reload";
+            export const KEY = `${modalcode.KEY}.${BASE}`;
+
+            export const MODES_CHANGE_TEXT = "Mode definitions have changed";
+            export const MODES_PROMPT = "Reload modes";
+
+            export const MODES_LOCATIONS_CHANGE_TEXT = "Modes locations have changed";
+            export const MODES_LOCATIONS_PROMPT = "Reload modes locations";
+
+            export const FAILED_TEXT = "Failed loading modes";
+        }
+    }
+}
+
+namespace keybindings {
+    export namespace modalcode {
+        export const BASE = configuration.modalcode.BASE;
+        export const KEY = configuration.modalcode.KEY;
+
+        export namespace mode {
+            export const BASE = "mode";
+            export const KEY = `${modalcode.KEY}.${BASE}`;
+        }
+    }
+}
 
 const STATUS_BAR_ITEM_ALIGN_LEFT = 9999999999;
 
-const SettingsChangeAction_AUTOMATIC_RELOAD = 0; // eslint-disable-line @typescript-eslint/naming-convention
-const SettingsChangeAction_ASK_TO_RELOAD    = 1; // eslint-disable-line @typescript-eslint/naming-convention
-const SettingsChangeAction_NO_ACTION        = 2; // eslint-disable-line @typescript-eslint/naming-convention
-const SettingsChangeAction_DEFAULT = SettingsChangeAction_AUTOMATIC_RELOAD; // eslint-disable-line @typescript-eslint/naming-convention
-// const SettingsChangeAction_Count = SettingsChangeAction_NO_ACTION + 1;
-type SettingsChangeAction = (
-    typeof SettingsChangeAction_AUTOMATIC_RELOAD |
-    typeof SettingsChangeAction_ASK_TO_RELOAD |
-    typeof SettingsChangeAction_NO_ACTION
-);
 
-const SETTINGS_CHANGE_ACTION_LABELS: Record<string, SettingsChangeAction> = {
-    "automatic reload": SettingsChangeAction_AUTOMATIC_RELOAD,
-    "ask to reload": SettingsChangeAction_ASK_TO_RELOAD,
-    "no action": SettingsChangeAction_NO_ACTION,
-} as const;
+enum SettingsChangeAction {
+    AutomaticReload = 0,
+    AskToReload     = 1,
+    NoAction        = 2,
+}
+
+namespace SettingsChangeAction {
+    export const COUNT = SettingsChangeAction.NoAction + 1;
+    export const DEFAULT = SettingsChangeAction.AutomaticReload;
+
+    export const LABELS = {
+        "automatic reload": SettingsChangeAction.AutomaticReload,
+        "ask to reload": SettingsChangeAction.AskToReload,
+        "no action": SettingsChangeAction.NoAction,
+    } as const satisfies Record<string, SettingsChangeAction>;
+}
 
 type Modes = Map<string, Mode>;
 
-let settings_change_action: SettingsChangeAction = SettingsChangeAction_DEFAULT;
+let settings_change_action: SettingsChangeAction = SettingsChangeAction.DEFAULT;
 let modes: Modes = new Map<string, Mode>();
 let status_bar_item: StatusBarItem | undefined;
 let type_subscription: Disposable | undefined;
@@ -243,10 +285,10 @@ let type_subscription: Disposable | undefined;
 class Mode implements ModeConfig {
     public readonly name: string;
     public readonly capturing: boolean;
-    public readonly description: string | undefined;
+    public readonly description: string;
     public readonly text: string;
 
-    public constructor(name: string, capturing: boolean, description: string | undefined) {
+    public constructor(name: string, capturing: boolean, description: string) {
         this.name = name;
         this.capturing = capturing;
         this.description = description;
@@ -276,7 +318,7 @@ class Mode implements ModeConfig {
 function ignore_type_commands(): void { /* disabling the 'type' command */ }
 
 function set_context_key(mode_name: string | undefined): void {
-    vsc_commands.executeCommand("setContext", MODE_CONTEXT_KEY, mode_name);
+    vsc_commands.executeCommand("setContext", keybindings.modalcode.mode.KEY, mode_name);
 }
 
 function reset_status_bar_item(): void {
@@ -301,18 +343,16 @@ async function select_mode(name?: Json): Promise<void> {
         for (const [_mode_name, mode] of modes) {
             const quick_pick_item: QuickPickItem = {
                 label: mode.name,
-                description: mode.capturing ? CAPTURING_MODE_DESCRIPTION : NON_CAPTURING_MODE_DESCRIPTION,
+                description: mode.capturing ? CAPTURING_DESCRIPTION : NON_CAPTURING_DESCRIPTION,
+                detail: mode.description,
             };
-            if (mode.description !== undefined) {
-                quick_pick_item.detail = mode.description;
-            }
             quick_pick_items.push(quick_pick_item);
         }
 
         const selected_item = await vsc_window.showQuickPick(quick_pick_items, {
             canPickMany: false,
-            title: SELECT_COMMAND_TOOLTIP,
-            placeHolder: SELECT_COMMAND_PLACEHOLDER,
+            title: commands.modalcode.select.TOOLTIP,
+            placeHolder: commands.modalcode.select.PLACEHOLDER,
         });
         if (selected_item === undefined) return;
 
@@ -338,28 +378,60 @@ async function select_mode(name?: Json): Promise<void> {
 }
 
 function parse_settings_change_action(action: Json | undefined): SettingsChangeAction | undefined {
-    if (action === undefined) {
-        return undefined;
-    }
+    if (action === undefined) return undefined;
     else if (!JsonUtils.is_string(action)) {
         vsc_window.showErrorMessage(msg_mismatched_type({
-            property_name: MODE,
+            property_name: configuration.modalcode.settingsChangeAction.KEY,
             actual_type: JsonUtils.type_name(action),
             expected_type: "string",
         }));
         return undefined;
     }
 
-    const action_kind = SETTINGS_CHANGE_ACTION_LABELS[action];
+    // IDEA(stefano): can typescript return a value and a type assertion at the same time?
+    const action_kind = SettingsChangeAction.LABELS[action as keyof typeof SettingsChangeAction.LABELS] as SettingsChangeAction | undefined;
     if (action_kind === undefined) {
-        const valid_actions = quote_and_join_items(Object.keys(SETTINGS_CHANGE_ACTION_LABELS));
+        const valid_actions = quote_and_join_items(Object.keys(SettingsChangeAction.LABELS));
         vsc_window.showErrorMessage(`unrecognized settings change action '${action}', valid values are ${valid_actions}`);
         return undefined;
     }
     return action_kind;
 }
 
-function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
+function reload_settings_change_action(): void {
+    const settings_change_action_configuration = vsc_workspace.getConfiguration(configuration.modalcode.KEY);
+    const settings_change_action_config: Json | undefined = settings_change_action_configuration.get(configuration.modalcode.settingsChangeAction.BASE);
+    const new_settings_change_action = parse_settings_change_action(settings_change_action_config);
+    if (new_settings_change_action !== undefined) {
+        // only updating the action kind if a valid value is selected
+        settings_change_action = new_settings_change_action;
+    }
+}
+
+function set_modes(new_modes: Modes): void {
+    modes = new_modes;
+
+    const starting_mode = modes.values().next().value;
+    if (starting_mode === undefined) {
+        // no modes were defined
+        deactivate();
+        return;
+    }
+
+    if (status_bar_item === undefined) {
+        status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, STATUS_BAR_ITEM_ALIGN_LEFT);
+        status_bar_item.command = commands.modalcode.select.KEY;
+        status_bar_item.tooltip = commands.modalcode.select.TOOLTIP;
+
+        starting_mode.set();
+        status_bar_item.show();
+    }
+    else {
+        starting_mode.set();
+    }
+}
+
+function parse_modes_from_settings(modalcode_modes: Json | undefined): Modes | undefined {
     const new_modes: Modes = new Map();
 
     //# Validating the config object
@@ -367,7 +439,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
     if (modalcode_modes === undefined) return new_modes;
     else if (!JsonUtils.is_array(modalcode_modes)) {
         vsc_window.showErrorMessage(msg_mismatched_type({
-            property_name: MODES_SETTINGS_KEY_Q,
+            property_name: `'${configuration.modalcode.modes.KEY}'`,
             actual_type: JsonUtils.type_name(modalcode_modes),
             expected_type: "array",
         }));
@@ -381,7 +453,7 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
 
         if (!JsonUtils.is_object(mode_config)) {
             vsc_window.showErrorMessage(msg_mismatched_type({
-                property_name: MODE,
+                property_name: configuration.modalcode.modes.definitions.Properties.MODE,
                 actual_type: JsonUtils.type_name(mode_config),
                 expected_type: "object",
             }, { mode_index }));
@@ -395,13 +467,13 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
 
         if (mode_name === undefined) {
             vsc_window.showErrorMessage(msg_missing_property({
-                property_name: NAME_Q,
+                property_name: `'${configuration.modalcode.modes.definitions.Properties.NAME}'`,
             }, { mode_index }));
             continue;
         }
         else if (!JsonUtils.is_string(mode_name)) {
             vsc_window.showErrorMessage(msg_mismatched_type({
-                property_name: NAME_Q,
+                property_name: `'${configuration.modalcode.modes.definitions.Properties.NAME}'`,
                 actual_type: JsonUtils.type_name(mode_name),
                 expected_type: "string",
             }, { mode_index }));
@@ -409,14 +481,14 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
         }
         else if (mode_name.length < MIN_NAME_LENGTH) {
             vsc_window.showErrorMessage(msg_min_length({
-                property_name: NAME_Q,
+                property_name: `'${configuration.modalcode.modes.definitions.Properties.NAME}'`,
                 min: MIN_NAME_LENGTH,
             }, { mode_index, mode_name }));
             continue;
         }
         else if (mode_name.length > MAX_NAME_LENGTH) {
             vsc_window.showErrorMessage(msg_max_length({
-                property_name: NAME_Q,
+                property_name: `'${configuration.modalcode.modes.definitions.Properties.NAME}'`,
                 max: MAX_NAME_LENGTH,
             }, { mode_index }));
             continue;
@@ -427,13 +499,13 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
 
         if (capturing === undefined) {
             vsc_window.showErrorMessage(msg_missing_property({
-                property_name: CAPTURING_Q,
+                property_name: `'${configuration.modalcode.modes.definitions.Properties.CAPTURING}'`,
             }, { mode_index, mode_name }));
             continue;
         }
         else if (!JsonUtils.is_boolean(capturing)) {
             vsc_window.showErrorMessage(msg_mismatched_type({
-                property_name: CAPTURING_Q,
+                property_name: `'${configuration.modalcode.modes.definitions.Properties.CAPTURING}'`,
                 actual_type: JsonUtils.type_name(capturing),
                 expected_type: "boolean",
             }, { mode_index, mode_name }));
@@ -443,20 +515,19 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
         //# Validating optional properties
 
         let { description } = mode_config;
-        if (description !== undefined) {
+        if (description === undefined) {
+            description = "";
+        }
+        else if (description !== undefined) {
             delete mode_config["description"];
 
             if (!JsonUtils.is_string(description)) {
                 vsc_window.showErrorMessage(msg_mismatched_type({
-                    property_name: DESCRIPTION_Q,
+                    property_name: `'${configuration.modalcode.modes.definitions.Properties.DESCRIPTION}'`,
                     actual_type: JsonUtils.type_name(description),
                     expected_type: "string",
                 }, { mode_index, mode_name }));
-                description = undefined;
-            }
-            else if (description.length < MIN_DESCRIPTION_LENGTH) {
-                // treating empty descriptions as no descriptions
-                description = undefined;
+                description = "";
             }
         }
 
@@ -496,51 +567,20 @@ function parse_modes(modalcode_modes: Json | undefined): Modes | undefined {
     return new_modes;
 }
 
-function reload_settings_change_action(): void {
-    const settings_change_action_config: Json | undefined = vsc_workspace.getConfiguration(MODALCODE).get(SETTINGS_CHANGE_ACTION);
-    const new_settings_change_action = parse_settings_change_action(settings_change_action_config);
-    if (new_settings_change_action !== undefined) {
-        // only updating the action kind if a valid value is selected
-        settings_change_action = new_settings_change_action;
-    }
-}
-
-function set_modes(new_modes: Modes): void {
-    modes = new_modes;
-
-    const starting_mode = modes.values().next().value;
-    if (starting_mode === undefined) {
-        // no modes were defined
-        deactivate();
-        return;
-    }
-
-    if (status_bar_item === undefined) {
-        status_bar_item = vsc_window.createStatusBarItem(StatusBarAlignment.Left, STATUS_BAR_ITEM_ALIGN_LEFT);
-        status_bar_item.command = SELECT_COMMAND;
-        status_bar_item.tooltip = SELECT_COMMAND_TOOLTIP;
-
-        starting_mode.set();
-        status_bar_item.show();
-    }
-    else {
-        starting_mode.set();
-    }
-}
-
 async function reload_modes(): Promise<void> {
     for (;;) {
-        const modalcode_modes_config: Json | undefined = vsc_workspace.getConfiguration(MODALCODE).get(MODES);
-        const new_modes = parse_modes(modalcode_modes_config);
+        const modalcode_configuration = vsc_workspace.getConfiguration(configuration.modalcode.KEY);
+        const modalcode_modes_config: Json | undefined = modalcode_configuration.get(configuration.modalcode.modes.BASE);
+        const new_modes = parse_modes_from_settings(modalcode_modes_config);
         if (new_modes !== undefined) {
             set_modes(new_modes);
             return;
         }
 
         // eslint-disable-next-line no-await-in-loop
-        const failed_loading_action = await vsc_window.showErrorMessage(FAILED_LOADING_TEXT, RELOAD_MODES_TEXT);
+        const failed_loading_action = await vsc_window.showErrorMessage(commands.modalcode.reload.FAILED_TEXT, commands.modalcode.reload.MODES_PROMPT);
         switch (failed_loading_action) {
-        case RELOAD_MODES_TEXT: {
+        case commands.modalcode.reload.MODES_PROMPT: {
             // try reloading modes again
             continue;
         }
@@ -553,19 +593,19 @@ async function reload_modes(): Promise<void> {
 }
 
 async function reload_configs(event: ConfigurationChangeEvent): Promise<void> {
-    if (event.affectsConfiguration(SETTINGS_CHANGE_ACTION_SETTINGS_KEY)) {
+    if (event.affectsConfiguration(configuration.modalcode.settingsChangeAction.KEY)) {
         reload_settings_change_action();
     }
 
-    if (event.affectsConfiguration(MODES_SETTINGS_KEY)) {
+    if (event.affectsConfiguration(configuration.modalcode.modes.KEY)) {
         switch (settings_change_action) {
-        case SettingsChangeAction_AUTOMATIC_RELOAD: {
+        case SettingsChangeAction.AutomaticReload: {
             await reload_modes();
         } break;
-        case SettingsChangeAction_ASK_TO_RELOAD: {
-            const initial_reload_action = await vsc_window.showInformationMessage(RELOAD_NOTIFICATION_TEXT, RELOAD_MODES_TEXT);
+        case SettingsChangeAction.AskToReload: {
+            const initial_reload_action = await vsc_window.showInformationMessage(commands.modalcode.reload.MODES_CHANGE_TEXT, commands.modalcode.reload.MODES_LOCATIONS_PROMPT);
             switch (initial_reload_action) {
-            case RELOAD_MODES_TEXT: {
+            case commands.modalcode.reload.MODES_LOCATIONS_PROMPT: {
                 await reload_modes();
             } break;
             case undefined: {
@@ -573,7 +613,7 @@ async function reload_configs(event: ConfigurationChangeEvent): Promise<void> {
             } break;
             }
         } break;
-        case SettingsChangeAction_NO_ACTION: {
+        case SettingsChangeAction.NoAction: {
             // no action
         } break;
         }
@@ -584,19 +624,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
     reload_settings_change_action();
     await reload_modes();
 
-    const select_mode_command = vsc_commands.registerCommand(SELECT_COMMAND, select_mode);
-    const reload_modes_command = vsc_commands.registerCommand(RELOAD_COMMAND, reload_modes);
-    const on_settings_change = vsc_workspace.onDidChangeConfiguration(reload_configs);
     context.subscriptions.push(
-        select_mode_command,
-        reload_modes_command,
-        on_settings_change,
+        vsc_commands.registerCommand(commands.modalcode.select.KEY, select_mode),
+        vsc_commands.registerCommand(commands.modalcode.reload.KEY, reload_modes),
+        vsc_workspace.onDidChangeConfiguration(reload_configs),
     );
 }
 
 export function deactivate(): void {
     reset_status_bar_item();
     reset_type_subscription();
-
     set_context_key(undefined);
 }

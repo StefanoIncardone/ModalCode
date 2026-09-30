@@ -1,0 +1,28 @@
+// rename modalcode.modes to modalcode.modes.definitions
+
+"modalcode.modes.locations": {
+  "title": "Modes configuration locations",
+  "description": "Order of locations to search for modes definitions",
+
+  "type": "array",
+  "default": [
+    "settings",
+    "globalStorage"
+  ],
+  "additionalItems": true,
+  "uniqueItems": true,
+  "items": {
+    "description": "Mode definition location",
+
+    "type": "string",
+    "default": "settings",
+    "enum": [
+      "settings",
+      "globalStorage"
+    ],
+    "enumDescriptions": [
+      "Search for modes in 'modalcode.modes' setting",
+      "Search for modes in extensions global storage"
+    ]
+  }
+},
